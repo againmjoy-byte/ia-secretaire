@@ -34,3 +34,4 @@ jobs:
       with:
         name: app-debug
         path: bin/*.apk
+uses: Android-for-Python/buildozer-action@main
