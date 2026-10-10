@@ -59,7 +59,6 @@ try:
         model_name="gemini-1.5-flash",
         system_instruction=system_instruction
     )
-    # Initialisation correcte du chat avec le modèle
     chat = model.start_chat(history=[])
 except Exception as e:
     st.error(f"Erreur d'initialisation du modèle : {e}")
@@ -78,12 +77,10 @@ for message in st.session_state.messages:
 
 # Zone de saisie utilisateur pour le chat
 if prompt := st.chat_input("Posez votre question ou parlez dans votre langue..."):
-    # Ajout du message utilisateur à l'historique
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Génération de la réponse de l'assistant en streaming
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         full_response = ""
@@ -98,6 +95,4 @@ if prompt := st.chat_input("Posez votre question ou parlez dans votre langue..."
             full_response = f"Une erreur s'est produite : {e}"
             message_placeholder.markdown(full_response)
             
-    # Ajout de la réponse de l'assistant à l'historique
     st.session_state.messages.append({"role": "assistant", "content": full_response})
-    
