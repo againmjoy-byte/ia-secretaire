@@ -157,5 +157,72 @@ elif domaine_actif == "📄 Secrétariat & Administratif":
 elif domaine_actif == "💼 Commerce & Vente":
     st.info("💡 Formulaire Commerce actif")
     req_commerce = st.text_input("Détails du produit, prix ou commande client :")
+# --- TABLEAU DE BORD DES ESPACES MÉTIERS (IANO) ---
 
+st.markdown("---")
+st.markdown("## 🏢 Espaces Professionnels IANO")
+st.write("Cliquez sur votre secteur pour accéder directement à votre espace de travail :")
+
+# Grille de carreaux organisée en 3 colonnes
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    if st.button("🏨 Espace Hôtel", use_container_width=True):
+        st.session_state["espace_metier"] = "hotel"
+    if st.button("✂️ Espace Coiffure", use_container_width=True):
+        st.session_state["espace_metier"] = "coiffure"
+    if st.button("🧺 Espace Pressing", use_container_width=True):
+        st.session_state["espace_metier"] = "pressing"
+
+with col2:
+    if st.button("🛍️ Espace Boutique", use_container_width=True):
+        st.session_state["espace_metier"] = "boutique"
+    if st.button("🧵 Espace Mode & Couture", use_container_width=True):
+        st.session_state["espace_metier"] = "couture"
+    if st.button("🏦 Espace Banque / Copecs", use_container_width=True):
+        st.session_state["espace_metier"] = "banque"
+
+with col3:
+    if st.button("🍽️ Espace Restauration", use_container_width=True):
+        st.session_state["espace_metier"] = "restauration"
+    if st.button("🔧 Espace Atelier Technique", use_container_width=True):
+        st.session_state["espace_metier"] = "atelier"
+    if st.button("🏥 Espace Clinique & Santé", use_container_width=True):
+        st.session_state["espace_metier"] = "sante"
+
+# Affichage dynamique et propre de l'espace cliqué avec ses formulaires
+if "espace_metier" in st.session_state:
+    metier = st.session_state["espace_metier"]
+    st.markdown("---")
+    
+    if metier == "hotel":
+        st.subheader("🏨 Espace Hôtel - Gestion & Réservations")
+        st.text_input("Numéro de chambre / Nom du client :")
+        st.text_area("Détails de la demande ou service demandé :")
+    elif metier == "boutique":
+        st.subheader("🛍️ Espace Boutique - Commerce")
+        st.text_input("Nom de l'article ou produit recherché :")
+        st.text_input("Prix ou quantité en stock :")
+    elif metier == "restauration":
+        st.subheader("🍽️ Espace Restauration / Maquis")
+        st.text_input("Plat du jour ou commande de repas :")
+    elif metier == "coiffure":
+        st.subheader("✂️ Espace Coiffure & Esthétique")
+        st.text_input("Type de prestation (tresses, soins, etc.) :")
+    elif metier == "couture":
+        st.subheader("🧵 Espace Mode & Couture")
+        st.text_input("Mesures ou modèle de vêtement à confectionner :")
+    elif metier == "atelier":
+        st.subheader("🔧 Espace Atelier & Réparations")
+        st.text_input("Description de la panne ou de l'appareil :")
+    elif metier == "pressing":
+        st.subheader("🧺 Espace Pressing & Entretien")
+        st.text_input("Type d'habit ou consigne de lavage :")
+    elif metier == "banque":
+        st.subheader("🏦 Espace Banque / Microfinance (Copecs)")
+        st.text_input("Type d'opération financière (Dépôt, Retrait, Épargne) :")
+    elif metier == "sante":
+        st.subheader("🏥 Espace Clinique & Santé")
+        st.text_input("Nom du patient / Symptômes ou consultation :")
+                 
     
