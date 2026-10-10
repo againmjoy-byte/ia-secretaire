@@ -1,67 +1,77 @@
+name: Build APK
 
-# (str) Title of your application
-title = Secrétaire IA
+on:
+  push:
+    branches: [ main ]
 
-# (str) Package name
-package.name = secretaireia
+jobs:
+  build:
+    runs-on: ubuntu-22.04
 
-# (str) Package domain (needed for android packaging)
-package.domain = org.ia
+    steps:
+    - uses: actions/checkout@v4
 
-# (str) Source code where the main.py live
-source.dir = .
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
 
-# (list) Source files to include (let empty to include all the files)
-source.include_exts = py,png,jpg,kv,atlas,json,txt,wav,mp3
+    - name: Get date for cache
+      id: get-date
+      run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
-# (str) Application versioning
-version = 0.1
+    - name: Cache Buildozer directory
+      uses: actions/cache@v4
+      with:
+        path: |
+          .buildozer
+          ~/.buildozer
+        key: buildozer-${{ hashFiles('buildozer.spec') }}-${{ steps.get-date.outputs.date }}
+        restore-keys: |
+          buildozer-${{ hashFiles('buildozer.spec') }}-
+          buildozer-
 
-# (list) Application requirements
-# Inclut Python, Kivy, les requêtes API et la gestion audio/réseau
-requirements = python3,kivy,requests,urllib3,certifi,idna,charset-normalizer
+    - name: Install system dependencies
+      run: |
+        sudo dpkg --add-architecture i386
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          git \
+          ffmpeg \
+          libsdl2-dev \
+          libsdl2-image-dev \
+          libsdl2-mixer-dev \
+          libsdl2-ttf-dev \
+          libportmidi-dev \
+          libswscale-dev \
+          libavformat-dev \
+          libavcodec-dev \
+          zlib1g-dev \
+          libffi-dev \
+          libssl-dev \
+          ant \
+          openjdk-17-jdk \
+          autoconf \
+          libtool \
+          pkg-config \
+          libncurses5:i386 \
+          libstdc++6:i386 \
+          libz1:i386
 
-# (str) Supported orientation (landscape, portrait or all)
-orientation = portrait
+    - name: Install Python packages (Buildozer & Cython)
+      run: |
+        pip install --upgrade pip
+        pip install --upgrade setuptools wheel
+        pip install Cython==0.29.33
+        pip install git+https://github.com/kivy/buildozer.git@master
 
-# (bool) Indicate if the application should be fullscreen or not
-fullscreen = 0
+    - name: Build with Buildozer
+      run: |
+        buildozer -v android debug
 
-
-# -----------------------------------------------------------------------------
-# Android specific configuration
-# -----------------------------------------------------------------------------
-
-# (list) Permissions nécessaires pour la secrétaire IA (Micro, Internet, Audio)
-android.permissions = INTERNET, RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE
-
-# (int) Target Android API, should be as high as possible.
-android.api = 33
-
-# (int) Minimum API required
-android.minapi = 21
-
-# (int) Android NDK version to use
-android.ndk = 25b
-
-# (bool) Accept SDK license automatically
-android.accept_sdk_license = True
-
-# (str) The Android arch to build for
-android.archs = arm64-v8a, armeabi-v7a
-
-# (bool) Enable AndroidX support
-android.enable_androidx = True
-
-
-# -----------------------------------------------------------------------------
-# Buildozer global options
-# -----------------------------------------------------------------------------
-
-[buildozer]
-
-# (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
-log_level = 2
-
-# (int) Display warning if buildozer is run as root (0 = disable, 1 = enable)
-warn_on_root = 1
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: secretaire-ia-apk
+        path: bin/*.apk
