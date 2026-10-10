@@ -88,7 +88,7 @@ if prompt := st.chat_input("Posez votre question ou parlez dans votre langue..."
 
             # Appel avec le modèle flash le plus récent en streaming
             response = client.models.generate_content_stream(
-                model="gemini-2.5-flash",
+                model=gemini-3.8-flash.
                 contents=formatted_contents,
                 config={
                     "system_instruction": system_instruction,
