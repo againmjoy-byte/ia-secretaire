@@ -49,7 +49,8 @@ if prompt_client := st.chat_input("Posez votre question ou parlez dans votre lan
         full_response = ""
         
         try:
-            # Construction du prompt système intelligent
+            chat = model.start_chat(history=[])
+
             system_instruction = f"""
             Tu es une secrétaire virtuelle universelle, professionnelle et multilingue.
             Ton domaine d'activité actuel est : {domaine_activite}.
