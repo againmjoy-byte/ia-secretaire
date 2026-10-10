@@ -1,37 +1,67 @@
-name: Build Android APK
 
-on:
-  push:
-    branches: [ "principal", "main" ]
-  workflow_dispatch:
+# (str) Title of your application
+title = Secrétaire IA
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+# (str) Package name
+package.name = secretaireia
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+# (str) Package domain (needed for android packaging)
+package.domain = org.ia
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+# (str) Source code where the main.py live
+source.dir = .
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential ccache git libffi-dev libssl-dev python3-dev
-        pip install --upgrade pip
-        pip install buildozer cython
+# (list) Source files to include (let empty to include all the files)
+source.include_exts = py,png,jpg,kv,atlas,json,txt,wav,mp3
 
-    - name: Build APK
-      run: |
-        buildozer -v android debug
+# (str) Application versioning
+version = 0.1
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-debug
-        path: bin/*.apk
-uses: Android-for-Python/buildozer-action@main
+# (list) Application requirements
+# Inclut Python, Kivy, les requêtes API et la gestion audio/réseau
+requirements = python3,kivy,requests,urllib3,certifi,idna,charset-normalizer
+
+# (str) Supported orientation (landscape, portrait or all)
+orientation = portrait
+
+# (bool) Indicate if the application should be fullscreen or not
+fullscreen = 0
+
+
+# -----------------------------------------------------------------------------
+# Android specific configuration
+# -----------------------------------------------------------------------------
+
+# (list) Permissions nécessaires pour la secrétaire IA (Micro, Internet, Audio)
+android.permissions = INTERNET, RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE
+
+# (int) Target Android API, should be as high as possible.
+android.api = 33
+
+# (int) Minimum API required
+android.minapi = 21
+
+# (int) Android NDK version to use
+android.ndk = 25b
+
+# (bool) Accept SDK license automatically
+android.accept_sdk_license = True
+
+# (str) The Android arch to build for
+android.archs = arm64-v8a, armeabi-v7a
+
+# (bool) Enable AndroidX support
+android.enable_androidx = True
+
+
+# -----------------------------------------------------------------------------
+# Buildozer global options
+# -----------------------------------------------------------------------------
+
+[buildozer]
+
+# (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
+log_level = 2
+
+# (int) Display warning if buildozer is run as root (0 = disable, 1 = enable)
+warn_on_root = 1
