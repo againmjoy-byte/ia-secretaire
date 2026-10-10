@@ -17,4 +17,5 @@ service = st.selectbox(
 user_input = st.text_input("Posez votre question ou parlez dans votre langue :")
 
 if user_input:
-    st.success(f"Secrétaire IA à l'écoute
+    st.success("Secrétaire IA à l'écoute")
+    
