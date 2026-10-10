@@ -1,26 +1,30 @@
 import streamlit as st
 import google.generativeai as genai
 
-st.set_page_config(page_title="Test Clé API", page_icon="🔍")
+st.set_page_config(page_title="Secrétaire IA Multilingue", page_icon="🤖")
 
-st.title("🔍 Test de connexion de ta clé")
+st.title("🤖 Secrétaire IA Multilingue")
 
+# Récupération de la clé API depuis les secrets Streamlit
 api_key = st.secrets.get("GEMINI_API_KEY")
 
 if not api_key:
     st.error("⚠️ La clé API 'GEMINI_API_KEY' est introuvable dans les secrets Streamlit.")
 else:
     genai.configure(api_key=api_key)
-    
-    if st.button("Lancer le test de ma clé"):
+
+    # Zone de saisie pour l'utilisateur
+    user_question = st.text_input("Posez votre question :")
+
+    if user_question:
+        st.write(f"**Vous :** {user_question}")
         try:
-            st.write("Interrogation de Google pour voir tes modèles autorisés...")
-            # On demande la liste exacte des modèles disponibles pour cette clé
-            models_list = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+            # Utilisation du modèle actuel recommandé
+            model = genai.GenerativeModel("gemini-3.8-flash")
+            response = model.generate_content(user_question)
             
-            st.success("Connexion réussie ! Voici les modèles disponibles pour ta clé :")
-            for mod in models_list:
-                st.code(mod)
-                
+            st.success("Réponse :")
+            st.write(response.text)
+            
         except Exception as err:
-            st.error(f"Échec de la connexion avec cette clé : {err}")
+            st.error(f"Erreur technique : {err}")
