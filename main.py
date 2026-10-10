@@ -67,4 +67,12 @@ st.text_input("Numéro WhatsApp / Contact de l'établissement :")
 
 if st.button("Enregistrer les paramètres du domaine"):
     st.success("Paramètres enregistrés avec succès !")
+    prompt_final = f"""
+Tu es une secrétaire virtuelle professionnelle, chaleureuse et multilingue.
+Règles de comportement :
+1. Accueille toujours le client poliment avec une formule de bienvenue.
+2. Réponds ensuite précisément à sa question.
+Question ou appel du client : {user_question}
+"""
+    
     
