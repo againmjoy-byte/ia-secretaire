@@ -136,5 +136,26 @@ activer_transfert = st.checkbox(
     value=True,
     help="L'IA prendra le relais en cas d'occupation ou de non-réponse, quel que soit l'opérateur."
 )
+# --- AJOUT DES DOMAINES IANO (SANS EFFACER LE CODE EXISTANT) ---
+
+st.markdown("---")
+st.subheader("🎯 Domaines d'action de IANO")
+
+# Sélection rapide d'un domaine pour afficher son formulaire dédié sans tout scroller
+domaine_actif = st.selectbox(
+    "Sélectionnez un domaine spécifique pour l'IA :",
+    ["Aucun / Général", "🏥 Santé & Assistance", "📄 Secrétariat & Administratif", "💼 Commerce & Vente"],
+    key="select_domaine_iano"
+)
+
+if domaine_actif == "🏥 Santé & Assistance":
+    st.info("💡 Formulaire Santé actif")
+    req_sante = st.text_input("Précisez les symptômes ou la demande médicale pour le patient :")
+elif domaine_actif == "📄 Secrétariat & Administratif":
+    st.info("💡 Formulaire Administratif actif")
+    req_admin = st.text_input("Quel document ou courrier officiel faut-il rédiger ?")
+elif domaine_actif == "💼 Commerce & Vente":
+    st.info("💡 Formulaire Commerce actif")
+    req_commerce = st.text_input("Détails du produit, prix ou commande client :")
 
     
