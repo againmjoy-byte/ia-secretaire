@@ -73,6 +73,58 @@ Règles de comportement :
 1. Accueille toujours le client poliment avec une formule de bienvenue.
 2. Réponds ensuite précisément à sa question.
 Question ou appel du client : {user_question}
-"""
-    
+""" 
+# --- AJOUT DE LA PARTIE VOCALE ET INTERACTIONS ---
+from gtts import gTTS
+
+st.divider()
+st.subheader("💬 Espace d'échanges (Texte ou Vocal)")
+
+# Choix de la voix pour la secrétaire IA
+voix_genre = st.selectbox("Voix de la secrétaire IA :", ["Féminine", "Masculine"])
+
+# Choix du mode d'interaction
+mode_entree = st.radio("Mode d'interaction :", ["Clavier (Écrire)", "Vocal (Parler)"], horizontal=True)
+
+user_question = ""
+
+if mode_entree == "Clavier (Écrire)":
+    user_question = st.text_input("Posez votre question ici :")
+else:
+    audio_file = st.audio_input("Enregistrez votre message vocal :")
+    if audio_file is not None:
+        st.audio(audio_file)
+        st.info("🎙️ Transcription de l'audio en cours...")
+        try:
+            transcription_response = model.generate_content([
+                "Transcris cet enregistrement audio fidèlement en texte en français :",
+                {"mime_type": audio_file.type, "data": audio_file.read()}
+            ])
+            user_question = transcription_response.text
+            st.write(f"**Texte reconnu :** {user_question}")
+        except Exception as e:
+            st.error(f"Erreur lors de la transcription : {e}")
+
+# Si on a une question (via texte ou vocal converti), on génère la réponse
+if user_question:
+    # On relance le modèle avec ton prompt final et la question
+    try:
+        with st.spinner("La secrétaire réfléchit..."):
+            response = model.generate_content(prompt_final)
+            reponse_texte = response.text
+        
+        st.success("Réponse de la Secrétaire IA :")
+        st.write(reponse_texte)
+
+        # Synthèse vocale (gTTS) pour écouter la réponse
+        st.info("🔊 Génération de la réponse audio...")
+        tts = gTTS(text=reponse_texte, lang='fr', slow=False)
+        audio_path = "reponse_ia.mp3"
+        tts.save(audio_path)
+        
+        st.audio(audio_path)
+
+    except Exception as err:
+        st.error(f"Une erreur est survenue lors de la réponse : {err}")
+
     
