@@ -1,6 +1,5 @@
-import os
 import streamlit as st
-import google.generativeai as genai
+from google import genai
 
 # Configuration de la page Streamlit
 st.set_page_config(
@@ -12,7 +11,7 @@ st.set_page_config(
 st.title("🌍 Secrétaire IA Universelle & Multilingue")
 st.write("Votre assistante intelligente pour tous types d'activités (Ventes, Services, Réservations, etc.).")
 
-# Récupération sécurisée de la clé API depuis les secrets de Streamlit Cloud
+# Récupération sécurisée du jeton depuis les secrets de Streamlit Cloud
 api_key = None
 try:
     if "GEMINI_API_KEY" in st.secrets:
@@ -21,11 +20,15 @@ except Exception:
     pass
 
 if not api_key:
-    st.error("Erreur : Veuillez configurer votre clé 'GEMINI_API_KEY' dans les secrets de Streamlit Cloud.")
+    st.error("Erreur : Veuillez configurer votre 'GEMINI_API_KEY' dans les secrets de Streamlit Cloud.")
     st.stop()
 
-# Configuration de l'API Google Gemini
-genai.configure(api_key=api_key)
+# Initialisation du client avec la méthode moderne
+try:
+    client = genai.Client(api_key=api_key)
+except Exception as e:
+    st.error(f"Erreur d'initialisation du client : {e}")
+    st.stop()
 
 # Barre latérale pour configurer le rôle et les informations de l'activité
 st.sidebar.header("⚙️ Configuration de l'activité")
@@ -53,17 +56,6 @@ Règles à suivre :
 3. Sois naturelle, polie et efficace comme un(e) véritable secrétaire professionnel(le).
 """
 
-# Initialisation du modèle Gemini avec streaming
-try:
-    model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
-        system_instruction=system_instruction
-    )
-    chat = model.start_chat(history=[])
-except Exception as e:
-    st.error(f"Erreur d'initialisation du modèle : {e}")
-    st.stop()
-
 # Initialisation de l'historique des messages dans la session Streamlit
 if "messages" not in st.session_state:
     st.session_state.messages = [
@@ -85,7 +77,24 @@ if prompt := st.chat_input("Posez votre question ou parlez dans votre langue..."
         message_placeholder = st.empty()
         full_response = ""
         try:
-            response = chat.send_message(prompt, stream=True)
+            # Construction de l'historique au format attendu par la nouvelle API
+            formatted_contents = []
+            for msg in st.session_state.messages[:-1]:
+                role_val = "user" if msg["role"] == "user" else "model"
+                formatted_contents.append({"role": role_val, "parts": [{"text": msg["content"]}]})
+            
+            # Ajout du message actuel
+            formatted_contents.append({"role": "user", "parts": [{"text": prompt}]})
+
+            # Appel avec le modèle flash le plus récent en streaming
+            response = client.models.generate_content_stream(
+                model="gemini-2.5-flash",
+                contents=formatted_contents,
+                config={
+                    "system_instruction": system_instruction,
+                }
+            )
+            
             for chunk in response:
                 if chunk.text:
                     full_response += chunk.text
