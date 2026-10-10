@@ -224,27 +224,4 @@ if "espace_metier" in st.session_state:
     elif metier == "sante":
         st.subheader("🏥 Espace Clinique & Santé")
         st.text_input("Nom du patient / Symptômes ou consultation :")
-            # --- ESPACE UNIQUE IANO (SANS RIEN EFFACER) ---
-st.markdown("---")
-st.markdown("## 🏢 Espace Professionnel IANO")
-
-secteur_actif = st.selectbox(
-    "Sélectionnez votre secteur :",
-    ["🏨 Hôtel", "🛍️ Boutique", "🍽️ Restauration", "✂️ Coiffure", "🧵 Couture", "🔧 Atelier"],
-    key="menu_unique_iano"
-)
-
-if secteur_actif == "🏨 Hôtel":
-    st.text_input("Client / Chambre :", key="champ_hotel")
-elif secteur_actif == "🛍️ Boutique":
-    st.text_input("Article :", key="champ_boutique")
-elif secteur_actif == "🍽️ Restauration":
-    st.text_input("Commande :", key="champ_resto")
-elif secteur_actif == "✂️ Coiffure":
-    st.text_input("Prestation :", key="champ_coiffure")
-elif secteur_actif == "🧵 Couture":
-    st.text_input("Mesures :", key="champ_couture")
-elif secteur_actif == "🔧 Atelier":
-    st.text_input("Réparation :", key="champ_atelier")
-
-    
+            
