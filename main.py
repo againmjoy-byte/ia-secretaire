@@ -126,5 +126,15 @@ if user_question:
 
     except Exception as err:
         st.error(f"Une erreur est survenue lors de la réponse : {err}")
+# --- CONFIGURATION TÉLÉPHONIQUE & CONTACT (AFRIQUE DE L'OUEST) ---
+num_principal = st.text_input(
+    "Numéro principal / WhatsApp (ex: +225 07 00 00 00, +229 97 00 00 00, +228 90 00 00 00) :"
+)
+
+activer_transfert = st.checkbox(
+    "Activer la secrétaire IA sur transfert d'appel (GSM)", 
+    value=True,
+    help="L'IA prendra le relais en cas d'occupation ou de non-réponse, quel que soit l'opérateur."
+)
 
     
