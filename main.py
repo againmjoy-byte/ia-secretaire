@@ -18,8 +18,8 @@ if user_input:
     
     with st.spinner("L'assistant réfléchit..."):
         try:
-            # Utilisation du modèle stable
-            model = genai.GenerativeModel('models/gemini-1.5-flash')
+            # Utilisation du nom de modèle direct sans le préfixe 'models/'
+            model = genai.GenerativeModel('gemini-1.5-flash')
             
             # Génération de la réponse
             response = model.generate_content(user_input)
