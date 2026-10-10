@@ -1,14 +1,20 @@
-from kivy.app import App
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
-from kivy.uix.button import Button
+import streamlit as st
 
-class SecretaireIAApp(App):
-    def build(self):
-        layout = BoxLayout(orientation='vertical')
-        layout.add_widget(Label(text='Secrétaire IA Multilingue'))
-        layout.add_widget(Button(text='Parler'))
-        return layout
+# Titre de l'application
+st.title("🤖 Secrétaire IA Multilingue")
+st.subheader("Votre assistant intelligent pour Hôtels, Cliniques & Boutiques")
 
-if __name__ == '__main__':
-    SecretaireIAApp().run()
+# Message de bienvenue
+st.write("Bienvenue ! Je suis votre secrétaire virtuelle. Comment puis-je vous aider aujourd'hui ?")
+
+# Choix du secteur
+service = st.selectbox(
+    "Choisissez le service souhaité :",
+    ["Hôtel (Réservation de chambre)", "Clinique (Rendez-vous médical)", "Boutique (Renseignements & Produits)"]
+)
+
+# Zone de discussion
+user_input = st.text_input("Posez votre question ou parlez dans votre langue :")
+
+if user_input:
+    st.success(f"Secrétaire IA à l'écoute
