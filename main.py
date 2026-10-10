@@ -1,30 +1,29 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
 
-st.set_page_config(page_title="IA Secrétaire", page_icon="🤖")
+st.set_page_config(page_title="Secrétaire IA", page_icon="🤖")
 
 st.title("🤖 Secrétaire IA Multilingue")
-st.write("Posez votre question ou parlez dans votre langue d'Afrique de l'Ouest")
 
-# Configuration de la clé API
-if "GEMINI_API_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+# Vérification de la clé API dans les secrets Streamlit
+api_key = st.secrets.get("GEMINI_API_KEY")
 
-# Saisie utilisateur
-user_input = st.text_input("Votre message :", key="input_text")
-
-if user_input:
-    st.markdown(f"**Vous :** {user_input}")
+if not api_key:
+    st.error("⚠️ La clé API 'GEMINI_API_KEY' est introuvable dans les secrets Streamlit.")
+else:
+    # Initialisation directe avec la nouvelle bibliothèque
+    client = genai.Client(api_key=api_key)
     
-    with st.spinner("L'assistant réfléchit..."):
+    user_input = st.text_input("Posez votre question :", key="user_query")
+    
+    if user_input:
+        st.write(f"**Vous :** {user_input}")
         try:
-            # Utilisation du nom de modèle direct sans le préfixe 'models/'
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            
-            # Génération de la réponse
-            response = model.generate_content(user_input)
-            
-            st.markdown(f"**Secrétaire IA :** {response.text}")
-            
-        except Exception as e:
-            st.error(f"Erreur lors de la génération : {e}")
+            # Appel direct au modèle flash
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=user_input
+            )
+            st.write(f"**Secrétaire IA :** {response.text}")
+        except Exception as err:
+            st.error(f"Erreur technique : {err}")
