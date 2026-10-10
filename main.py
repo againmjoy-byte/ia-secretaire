@@ -18,8 +18,8 @@ if user_input:
     
     with st.spinner("L'assistant réfléchit..."):
         try:
-            # Utilisation du modèle à jour
-            model = genai.GenerativeModel('models/gemini-3.8-flash')
+            # Utilisation du modèle stable
+            model = genai.GenerativeModel('models/gemini-1.5-flash')
             
             # Génération de la réponse
             response = model.generate_content(user_input)
@@ -27,4 +27,4 @@ if user_input:
             st.markdown(f"**Secrétaire IA :** {response.text}")
             
         except Exception as e:
-            st.error(fErreur lors de la génération : {e}")
+            st.error(f"Erreur lors de la génération : {e}")
