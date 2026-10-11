@@ -1,4 +1,56 @@
 import streamlit as st
+import datetime
+
+# --- AUTOMATISATION DE L'ESSAI GRATUIT ET SÉCURITÉ IANO ---
+
+# Si c'est la toute première ouverture par le client, on démarre l'essai automatiquement
+if "trial_start" not in st.session_state:
+    st.session_state["trial_start"] = datetime.date.today()
+
+if "abonne" not in st.session_state:
+    st.session_state["abonne"] = False
+
+# CALCUL DES JOURS ÉCOULÉS (Automatique)
+jours_ecoules = (datetime.date.today() - st.session_state["trial_start"]).days
+jours_restants = 30 - jours_ecoules
+
+# CODES D'ABONNEMENT VALIDES (Créés par vous)
+CODES_ABONNEMENTS = {
+    "IANO-VIP-15K": "Client VIP",
+    "IANO-A1-8821": "Client A1",
+    "IANO-A2-4309": "Client A2"
+}
+
+# --- VÉRIFICATION DE L'ACCÈS ---
+
+# SI LES 30 JOURS SONT DEPASSÉS ET QUE LE CLIENT N'A PAS PAYÉ : ON BLOQUE
+if jours_ecoules > 30 and not st.session_state["abonne"]:
+    st.title("🔒 Période d'essai terminée - IANO")
+    st.error("⏳ Vos 30 jours d'essai gratuit sont écoulés.")
+    st.write("Pour continuer à utiliser votre Secrétaire Multilingue IANO, veuillez renouveler votre abonnement.")
+    
+    code_client = st.text_input("🔑 Entrez votre code d'abonnement :", type="password")
+    
+    if st.button("Valider l'abonnement", use_container_width=True):
+        if code_client in CODES_ABONNEMENTS:
+            st.session_state["abonne"] = True
+            st.success("✅ Abonnement activé avec succès ! Merci pour votre confiance.")
+            st.rerun()
+        else:
+            st.error("❌ Code invalide. Veuillez effectuer votre paiement Mobile Money pour recevoir un code.")
+            
+    # Bloque l'application tant que l'abonnement n'est pas payé
+    st.stop()
+
+# --- BARRE LATÉRALE (Pendant l'essai ou l'abonnement) ---
+if st.session_state["abonne"]:
+    st.sidebar.success("⭐ Compte IANO Abonné Actif")
+else:
+    st.sidebar.info(f"⏳ Essai Gratuit IANO : **{max(0, jours_restants)} jours** restants")
+
+# --- À PARTIR D'ICI, SE TROUVE TOUT VOTRE CODE EXISTANT (IA, VOCAL, ESPACES MÉTIERS) ---
+
+
 import google.generativeai as genai
 
 st.set_page_config(page_title="Secrétaire IA Multilingue", page_icon="🤖")
