@@ -336,4 +336,42 @@ delai_secondes = st.slider(
 )
 
 st.info(f"💡 L'IA prendra la main si le téléphone sonne plus de **{delai_secondes} secondes** sans réponse.")
+# ==========================================
+# 💬 ESPACE D'ÉCHANGES ET GÉNÉRATEUR WHATSAPP GRATUIT
+# ==========================================
+st.markdown("---")
+st.subheader("💬 Assistant IA & Réponses WhatsApp")
 
+# Champ pour entrer la question ou le message du client
+message_client = st.text_input("Message ou question du client :", placeholder="Ex: Avez-vous une chambre libre et à quel prix ?")
+numero_client = st.text_input("Numéro WhatsApp du client (avec indicatif, ex: 22890000000) :", placeholder="228...")
+
+if st.button("🤖 Générer la réponse de l'IA"):
+    if message_client:
+        # L'IA génère la réponse basée sur la base de connaissances
+        response = model.generate_content(message_client)
+        texte_reponse = response.text
+        
+        st.success("Réponse générée par l'IA :")
+        st.write(texte_reponse)
+        
+        # Création du lien WhatsApp pré-rempli gratuit (0 FCFA)
+        if numero_client:
+            # Encodage du texte pour l'URL WhatsApp
+            import urllib.parse
+            texte_encode = urllib.parse.quote(texte_reponse)
+            lien_whatsapp = f"https://wa.me/{numero_client.strip()}?text={texte_encode}"
+            
+            # Bouton d'action directe
+            st.markdown(f'''
+                <a href="{lien_whatsapp}" target="_blank">
+                    <button style="background-color:#25D366; color:white; border:none; padding:10px 20px; border-radius:5px; font-weight:bold; cursor:pointer;">
+                        📲 Valider et Envoyer sur WhatsApp en 1 clic
+                    </button>
+                </a>
+            ''', unsafe_allow_html=True)
+        else:
+            st.warning("⚠️ Renseignez le numéro du client pour activer le bouton WhatsApp.")
+    else:
+        st.error("Veuillez saisir une question ou un message du client.")
+        
