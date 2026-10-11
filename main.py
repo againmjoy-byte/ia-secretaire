@@ -1,9 +1,6 @@
 import pandas as pd
 import streamlit as st
 import datetime
-import streamlit as st
-import datetime
-import pandas as pd
 
 # ==========================================
 # 🔒 SÉCURITÉ & VÉRIFICATION DE L'ABONNEMENT
@@ -20,26 +17,21 @@ Effectuez votre paiement sur notre numéro Mobile Money : **72756375**, puis con
 
 code_client = st.text_input("Entrez votre code d'abonnement :", type="password")
 
-# 1. Si rien n'est écrit, on bloque tout de suite
+# 1. Si rien n'est écrit, on bloque
 if not code_client:
     st.warning("Veuillez entrer votre code d'accès ci-dessus pour débloquer l'application.")
     st.stop()
 
-# 2. Chargement des codes depuis ton Google Sheet (Assure-toi que ton lien ou secrets st.secrets est bien configuré)
+# 2. Chargement direct de ton Google Sheet public/partagé
 try:
-    # Si tu utilises st.secrets pour ton Google Sheet, mets ta méthode de chargement ici :
-    # Exemple classique avec les secrets Streamlit :
-    sheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
-    df_codes = pd.read_csv(sheet_url.replace("/edit?usp=sharing", "/export?format=csv"))
-except Exception:
-    # Si la lecture échoue, on bloque par sécurité
+    sheet_url = "https://docs.google.com/spreadsheets/d/1x_kCd3p-eZkkeByctaCf9YJk1EQ2Y9fkUoz8f6uIDfs/export?format=csv"
+    df_codes = pd.read_csv(sheet_url)
+except Exception as e:
     df_codes = None
 
 # 3. Vérification stricte
-acces_autorise = False
-
 if df_codes is not None and 'code' in df_codes.columns:
-    # Nettoyage des espaces pour comparer proprement
+    # Nettoyage et comparaison avec le code saisi (ex: "M Joy")
     client_row = df_codes[df_codes['code'].astype(str).str.strip() == code_client.strip()]
     
     if not client_row.empty:
@@ -48,15 +40,12 @@ if df_codes is not None and 'code' in df_codes.columns:
             try:
                 date_exp_str = str(client_row['DateExpiration'].values[0]).strip()
                 date_expiration = datetime.datetime.strptime(date_exp_str[:10], "%Y-%m-%d").date()
-                if datetime.date.today() <= date_expiration:
-                    acces_autorise = True
-                else:
+                if datetime.date.today() > date_expiration:
                     st.error("❌ Votre abonnement a expiré. Veuillez effectuer votre renouvellement de 15 000 FCFA au **72756375**.")
                     st.stop()
             except Exception:
-                acces_autorise = True # Autorisé si la date est mal formatée mais que le code existe
-        else:
-            acces_autorise = True
+                pass
+        st.success("✅ Accès autorisé ! Bienvenue dans votre Secrétaire IA.")
     else:
         st.error("❌ Code invalide ou inconnu. Veuillez effectuer votre paiement au **72756375**.")
         st.stop()
@@ -64,9 +53,10 @@ else:
     st.error("❌ Erreur de connexion à la base de données des abonnés.")
     st.stop()
 
-# Si le code n'est pas bon, le st.stop() au dessus a déjà tout bloqué.
-# Si on arrive ici, c'est que le code est 100% valide !
-st.success("✅ Accès autorisé ! Bienvenue dans votre Secrétaire IA.")
+# ==========================================
+# TOUT LE RESTE DE TON APPLICATION COMMENCE ICI
+# ==========================================
+
 
 # --- AUTOMATISATION DE L'ESSAI GRATUIT ET SÉCURITÉ IANO ---
 
