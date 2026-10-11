@@ -337,41 +337,86 @@ delai_secondes = st.slider(
 
 st.info(f"💡 L'IA prendra la main si le téléphone sonne plus de **{delai_secondes} secondes** sans réponse.")
 # ==========================================
-# 💬 ESPACE D'ÉCHANGES ET GÉNÉRATEUR WHATSAPP GRATUIT
+# 🌍 ASSISTANT IA MULTILINGUE & LOCAL (Afrique de l'Ouest, International)
 # ==========================================
 st.markdown("---")
-st.subheader("💬 Assistant IA & Réponses WhatsApp")
+st.subheader("🌍 Assistant IA Multilingue & Local (Texte & Vocal)")
 
-# Champ pour entrer la question ou le message du client
-message_client = st.text_input("Message ou question du client :", placeholder="Ex: Avez-vous une chambre libre et à quel prix ?")
-numero_client = st.text_input("Numéro WhatsApp du client (avec indicatif, ex: 22890000000) :", placeholder="228...")
+# On met à jour les instructions système pour intégrer les langues locales et l'Afrique de l'Ouest
+system_instruction = f"""
+Tu es la secrétaire virtuelle professionnelle, chaleureuse et courtoise pour '{nom_etablissement}' (Secteur : {secteur}).
+Voici les informations et les tarifs officiels à utiliser :
+{base_connaissances}
 
-if st.button("🤖 Générer la réponse de l'IA"):
-    if message_client:
-        # L'IA génère la réponse basée sur la base de connaissances
-        response = model.generate_content(message_client)
-        texte_reponse = response.text
-        
-        st.success("Réponse générée par l'IA :")
-        st.write(texte_reponse)
-        
-        # Création du lien WhatsApp pré-rempli gratuit (0 FCFA)
-        if numero_client:
-            # Encodage du texte pour l'URL WhatsApp
+Règles importantes de communication :
+1. Tu es multilingue et tu t'adaptes à la langue du client (français, anglais, chinois, etc.).
+2. Pour l'Afrique de l'Ouest (Togo, Côte d'Ivoire, etc.), si le client s'exprime en français populaire, en argot local ou en nouchi, comprends-le parfaitement et réponds-lui avec un ton professionnel mais familier et respectueux, adapté à notre culture.
+3. Donne toujours les prix exacts et les informations précises basées sur la base de connaissances ci-dessus.
+"""
+
+# Mise à jour du modèle avec le profil multilingue et local
+model = genai.GenerativeModel(
+    model_name='gemini-3.8-flash',
+    system_instruction=system_instruction
+)
+
+tab1, tab2 = st.tabs(["💬 Message Texte", "🎙️ Note Vocale du Client"])
+
+# TAB 1 : Gestion par Texte
+with tab1:
+    message_client = st.text_input("Message écrit du client (Toutes langues / Local) :", placeholder="Ex: Boss, y'a chambre ventilée dispo à combien ?")
+    if st.button("🤖 Générer la réponse Texte"):
+        if message_client:
+            response = model.generate_content(message_client)
+            texte_reponse = response.text
+            
+            st.success("Réponse préparée par l'IA :")
+            st.write(texte_reponse)
+            
+            # Lien WhatsApp direct avec le numéro de l'établissement configuré en haut
             import urllib.parse
             texte_encode = urllib.parse.quote(texte_reponse)
-            lien_whatsapp = f"https://wa.me/{numero_client.strip()}?text={texte_encode}"
+            num_clean = contact_tel.replace("+", "").replace(" ", "").strip()
+            lien_whatsapp = f"https://wa.me/{num_clean}?text={texte_encode}"
             
-            # Bouton d'action directe
             st.markdown(f'''
                 <a href="{lien_whatsapp}" target="_blank">
-                    <button style="background-color:#25D366; color:white; border:none; padding:10px 20px; border-radius:5px; font-weight:bold; cursor:pointer;">
-                        📲 Valider et Envoyer sur WhatsApp en 1 clic
+                    <button style="background-color:#25D366; color:white; border:none; padding:12px 24px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:16px;">
+                        📲 Ouvrir WhatsApp avec la réponse prête
                     </button>
                 </a>
             ''', unsafe_allow_html=True)
-        else:
-            st.warning("⚠️ Renseignez le numéro du client pour activer le bouton WhatsApp.")
-    else:
-        st.error("Veuillez saisir une question ou un message du client.")
-        
+
+# TAB 2 : Gestion par Vocal (Audio)
+with tab2:
+    audio_file = st.file_uploader("Importer le vocal du client (.mp3, .wav, .m4a)", type=["mp3", "wav", "m4a", "ogg"])
+    
+    if audio_file is not None:
+        st.audio(audio_file, format='audio/wav')
+        if st.button("🎙️ Analyser le vocal multilingue et répondre"):
+            audio_bytes = audio_file.read()
+            prompt_audio = [
+                "Écoute cette note vocale (qui peut être en français local, en langue d'Afrique de l'Ouest, en anglais ou en chinois). Réponds-lui poliment en adoptant le même ton et en utilisant les tarifs de l'établissement :", 
+                {"mime_type": audio_file.type, "data": audio_bytes}
+            ]
+            
+            response = model.generate_content(prompt_audio)
+            texte_reponse_vocal = response.text
+            
+            st.success("🗣️ L'IA a compris le vocal :")
+            st.write(texte_reponse_vocal)
+            
+            # Lien WhatsApp pour le vocal
+            import urllib.parse
+            texte_encode_vocal = urllib.parse.quote(texte_reponse_vocal)
+            num_clean = contact_tel.replace("+", "").replace(" ", "").strip()
+            lien_whatsapp_vocal = f"https://wa.me/{num_clean}?text={texte_encode_vocal}"
+            
+            st.markdown(f'''
+                <a href="{lien_whatsapp_vocal}" target="_blank">
+                    <button style="background-color:#25D366; color:white; border:none; padding:12px 24px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:16px;">
+                        📲 Envoyer la réponse sur WhatsApp
+                    </button>
+                </a>
+            ''', unsafe_allow_html=True)
+
