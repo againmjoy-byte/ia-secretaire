@@ -337,16 +337,22 @@ delai_secondes = st.slider(
 
 st.info(f"💡 L'IA prendra la main si le téléphone sonne plus de **{delai_secondes} secondes** sans réponse.")
 # ==========================================
-# 🌍 ASSISTANT IA MULTILINGUE & LOCAL (Afrique de l'Ouest, International)
+# 🌍 ASSISTANT IA MULTILINGUE & LOCAL (Texte & Vocal)
 # ==========================================
 st.markdown("---")
-st.subheader("🌍 Assistant IA Multilingue & Local (Texte & Vocal)")
+st.subheader("🌍 Assistant IA Multilingue & Local")
 
-# On met à jour les instructions système pour intégrer les langues locales et l'Afrique de l'Ouest
-system_instruction = f"""
-Tu es la secrétaire virtuelle professionnelle, chaleureuse et courtoise pour '{nom_etablissement}' (Secteur : {secteur}).
+# Récupération sécurisée des variables du haut si elles existent
+nom_etablissement_val = nom_etablissement if 'nom_etablissement' in locals() else "Mon Établissement"
+secteur_val = secteur if 'secteur' in locals() else "Commerce"
+base_connaissances_val = base_connaissances if 'base_connaissances' in locals() else "Tarifs et informations standards."
+contact_tel_val = contact_tel if 'contact_tel' in locals() else "+22800000000"
+
+# Instructions système dynamiques pour l'IA
+system_instruction_text = f"""
+Tu es la secrétaire virtuelle professionnelle, chaleureuse et courtoise pour '{nom_etablissement_val}' (Secteur : {secteur_val}).
 Voici les informations et les tarifs officiels à utiliser :
-{base_connaissances}
+{base_connaissances_val}
 
 Règles importantes de communication :
 1. Tu es multilingue et tu t'adaptes à la langue du client (français, anglais, chinois, etc.).
@@ -354,29 +360,29 @@ Règles importantes de communication :
 3. Donne toujours les prix exacts et les informations précises basées sur la base de connaissances ci-dessus.
 """
 
-# Mise à jour du modèle avec le profil multilingue et local
-model = genai.GenerativeModel(
+# Initialisation du modèle Gemini 3.8 Flash
+model_assistant = genai.GenerativeModel(
     model_name='gemini-3.8-flash',
-    system_instruction=system_instruction
+    system_instruction=system_instruction_text
 )
 
 tab1, tab2 = st.tabs(["💬 Message Texte", "🎙️ Note Vocale du Client"])
 
 # TAB 1 : Gestion par Texte
 with tab1:
-    message_client = st.text_input("Message écrit du client (Toutes langues / Local) :", placeholder="Ex: Boss, y'a chambre ventilée dispo à combien ?")
+    message_client = st.text_input("Message écrit du client :", placeholder="Ex: Boss, y'a chambre ventilée dispo à combien ?")
     if st.button("🤖 Générer la réponse Texte"):
         if message_client:
-            response = model.generate_content(message_client)
+            response = model_assistant.generate_content(message_client)
             texte_reponse = response.text
             
             st.success("Réponse préparée par l'IA :")
             st.write(texte_reponse)
             
-            # Lien WhatsApp direct avec le numéro de l'établissement configuré en haut
+            # Lien WhatsApp direct
             import urllib.parse
             texte_encode = urllib.parse.quote(texte_reponse)
-            num_clean = contact_tel.replace("+", "").replace(" ", "").strip()
+            num_clean = str(contact_tel_val).replace("+", "").replace(" ", "").strip()
             lien_whatsapp = f"https://wa.me/{num_clean}?text={texte_encode}"
             
             st.markdown(f'''
@@ -400,7 +406,7 @@ with tab2:
                 {"mime_type": audio_file.type, "data": audio_bytes}
             ]
             
-            response = model.generate_content(prompt_audio)
+            response = model_assistant.generate_content(prompt_audio)
             texte_reponse_vocal = response.text
             
             st.success("🗣️ L'IA a compris le vocal :")
@@ -409,7 +415,7 @@ with tab2:
             # Lien WhatsApp pour le vocal
             import urllib.parse
             texte_encode_vocal = urllib.parse.quote(texte_reponse_vocal)
-            num_clean = contact_tel.replace("+", "").replace(" ", "").strip()
+            num_clean = str(contact_tel_val).replace("+", "").replace(" ", "").strip()
             lien_whatsapp_vocal = f"https://wa.me/{num_clean}?text={texte_encode_vocal}"
             
             st.markdown(f'''
@@ -419,4 +425,3 @@ with tab2:
                     </button>
                 </a>
             ''', unsafe_allow_html=True)
-
