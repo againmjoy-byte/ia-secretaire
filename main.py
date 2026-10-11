@@ -275,4 +275,38 @@ def charger_codes_promo():
 # Chargement des données
 df_codes = charger_codes_promo()
 import datetime
+# ==========================================
+# 🏢 CONFIGURATION DU DOMAINE & BASE DE CONNAISSANCES (Tous secteurs : Hôtels, Cliniques, Ateliers, etc.)
+# ==========================================
+st.sidebar.markdown("---")
+st.sidebar.subheader("⚙️ Paramètres de l'Établissement")
+
+# Choix ou saisie libre du secteur
+secteur_activite = st.sidebar.selectbox(
+    "Secteur d'activité :",
+    ["🏨 Hôtel / Hébergement", "🏥 Clinique / Santé", "🔧 Atelier / Mécanique", "🍽️ Restaurant / Bar", "🛍️ Commerce / Autre"]
+)
+
+nom_structure = st.sidebar.text_input("Nom de votre structure :", "Mon Entreprise")
+
+# La grande zone fourre-tout où le gérant met TOUT (prix, services, pièces, menus, horaires)
+base_infos_client = st.sidebar.text_area(
+    "Informations & Tarifs (Prix, prestations, dispos...) :",
+    "Ex pour mécanicien : Vidange 5000 FCFA, Révision complète 20000 FCFA. Ouvert de 8h à 18h."
+)
+
+# Instruction système dynamique injectée directement dans ton IA Gemini
+system_instruction = f"""
+Tu es la secrétaire virtuelle professionnelle et courtoise pour '{nom_structure}' (Secteur : {secteur_activite}).
+Voici les informations officielles, les prix et les règles fournis par le gérant :
+{base_infos_client}
+
+Ton rôle est d'accueillir les clients par message ou par vocal, de leur donner les prix exacts, de répondre à leurs questions sur les services et de les orienter au mieux selon les consignes ci-dessus.
+"""
+
+# Mise à jour du modèle avec les instructions du domaine
+model = genai.GenerativeModel(
+    model_name='gemini-3.8-flash',
+    system_instruction=system_instruction
+)
 
