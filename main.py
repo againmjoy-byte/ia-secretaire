@@ -323,4 +323,17 @@ with col1:
 with col2:
     # Lien direct vers le numéro WhatsApp ou appel
     st.markdown("[💬 Tester l'appel / WhatsApp direct](https://wa.me/228...)")
-    
+    # --- CONFIGURATION DU DÉLAI DE DÉCROCHAGE ---
+st.markdown("### ⏱️ Réglage du transfert d'appel")
+
+delai_secondes = st.slider(
+    "Décrochage automatique par l'IA après combien de secondes de sonnerie ?",
+    min_value=5,
+    max_value=30,
+    value=15,
+    step=5,
+    help="Si le gérant ne décroche pas dans ce délai, l'IA répond automatiquement à l'appelant."
+)
+
+st.info(f"💡 L'IA prendra la main si le téléphone sonne plus de **{delai_secondes} secondes** sans réponse.")
+
