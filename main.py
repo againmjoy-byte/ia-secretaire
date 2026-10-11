@@ -309,4 +309,18 @@ model = genai.GenerativeModel(
     model_name='gemini-3.8-flash',
     system_instruction=system_instruction
 )
+# --- MODULE DE GESTION DES APPELS & TÉLÉPHONIE ---
+st.markdown("---")
+st.subheader("📞 Liaison Téléphonique & Appels Entrants")
 
+# Un bouton interactif pour simuler ou déclencher la connexion d'appel
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("🟢 Activer la permanence téléphonique"):
+        st.success("La secrétaire IA est désormais active sur les transferts d'appels de votre ligne !")
+
+with col2:
+    # Lien direct vers le numéro WhatsApp ou appel
+    st.markdown("[💬 Tester l'appel / WhatsApp direct](https://wa.me/228...)")
+    
