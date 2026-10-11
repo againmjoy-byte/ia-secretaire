@@ -15,7 +15,7 @@ else:
     genai.configure(api_key=api_key)
 
 # 3. Création du modèle juste après la configuration de la clé
-model = genai.GenerativeModel('gemini-2.5-flash')
+model = genai.GenerativeModel('gemini-3.8-flash')
 
 # ==========================================
 # 🔒 SÉCURITÉ & VÉRIFICATION DE L'ABONNEMENT
