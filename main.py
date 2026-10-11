@@ -188,5 +188,19 @@ activer_transfert = st.checkbox(
     value=True,
     help="L'IA prendra le relais en cas d'occupation ou de non-réponse, quel que soit l'opérateur."
 )
+# --- CONNEXION BASE DE DONNÉES GOOGLE SHEETS ---
+GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1x_kCd3p-eZkkeByctaCf9YJk1EQ2Y9fkUoz8f6uIDfs/export?format=csv"
+
+@st.cache_data(ttl=60)
+def charger_codes_promo():
+    try:
+        df = pd.read_csv(GOOGLE_SHEET_URL)
+        return df
+    except Exception as e:
+        st.error(f"Erreur lors du chargement des abonnements : {e}")
+        return None
+
+# Chargement des données
+df_codes = charger_codes_promo()
 
         
