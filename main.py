@@ -337,91 +337,83 @@ delai_secondes = st.slider(
 
 st.info(f"💡 L'IA prendra la main si le téléphone sonne plus de **{delai_secondes} secondes** sans réponse.")
 # ==========================================
-# 🌍 ASSISTANT IA MULTILINGUE & LOCAL (Texte & Vocal)
+# 📊 TABLEAU DE BORD DU GÉRANT : HISTORIQUE & PRISE DE RELAIS IA
 # ==========================================
 st.markdown("---")
-st.subheader("🌍 Assistant IA Multilingue & Local")
+st.subheader("📊 Tableau de Bord du Gérant : Supervision & Relais IA")
 
-# Récupération sécurisée des variables du haut si elles existent
-nom_etablissement_val = nom_etablissement if 'nom_etablissement' in locals() else "Mon Établissement"
-secteur_val = secteur if 'secteur' in locals() else "Commerce"
-base_connaissances_val = base_connaissances if 'base_connaissances' in locals() else "Tarifs et informations standards."
-contact_tel_val = contact_tel if 'contact_tel' in locals() else "+22800000000"
+st.markdown("""
+* **Mode Surveillance / Relais :** Quand vous êtes absent ou occupé, l'IA consigne ici les échanges et prépare les réponses automatiques. 
+* **Historique :** Visualisez tout ce qui s'est passé et reprenez le contrôle à tout moment en un clic.
+""")
 
-# Instructions système dynamiques pour l'IA
-system_instruction_text = f"""
-Tu es la secrétaire virtuelle professionnelle, chaleureuse et courtoise pour '{nom_etablissement_val}' (Secteur : {secteur_val}).
-Voici les informations et les tarifs officiels à utiliser :
-{base_connaissances_val}
+# Initialisation d'un historique dans Streamlit si ça n'existe pas encore
+if 'historique_messages' not in st.session_state:
+    st.session_state.historique_messages = []
 
-Règles importantes de communication :
-1. Tu es multilingue et tu t'adaptes à la langue du client (français, anglais, chinois, etc.).
-2. Pour l'Afrique de l'Ouest (Togo, Côte d'Ivoire, etc.), si le client s'exprime en français populaire, en argot local ou en nouchi, comprends-le parfaitement et réponds-lui avec un ton professionnel mais familier et respectueux, adapté à notre culture.
-3. Donne toujours les prix exacts et les informations précises basées sur la base de connaissances ci-dessus.
-"""
+# Section pour simuler l'arrivée d'un message client (ou le journal d'activité de l'IA)
+st.markdown("### 📥 Activité récente des clients")
 
-# Initialisation du modèle Gemini 3.8 Flash
-model_assistant = genai.GenerativeModel(
-    model_name='gemini-3.8-flash',
-    system_instruction=system_instruction_text
-)
+col1, col2 = st.columns(2)
 
-tab1, tab2 = st.tabs(["💬 Message Texte", "🎙️ Note Vocale du Client"])
+with col1:
+    nouveau_client_txt = st.text_input("Simuler un message entrant (Texte) :", placeholder="Ex: Bonjour, il y a de la place ?")
+    if st.button("📨 Enregistrer & Laisser l'IA répondre"):
+        if nouveau_client_txt:
+            # L'IA génère la réponse automatique
+            reponse_auto = model_assistant.generate_content(nouveau_client_txt).text
+            # On ajoute à l'historique du gérant
+            st.session_state.historique_messages.insert(0, {
+                "type": "Texte",
+                "client": nouveau_client_txt,
+                "reponse": reponse_auto,
+                "statut": "🤖 Géré par l'IA (En attente de validation finale)"
+            })
+            st.success("Message traité et consigné dans le tableau de bord !")
 
-# TAB 1 : Gestion par Texte
-with tab1:
-    message_client = st.text_input("Message écrit du client :", placeholder="Ex: Boss, y'a chambre ventilée dispo à combien ?")
-    if st.button("🤖 Générer la réponse Texte"):
-        if message_client:
-            response = model_assistant.generate_content(message_client)
-            texte_reponse = response.text
+with col2:
+    nouveau_client_vocal = st.file_uploader("Simuler un vocal entrant :", type=["mp3", "wav", "m4a"], key="vocal_entrant")
+    if nouveau_client_vocal is not None:
+        if st.button("🎙️ Traiter le vocal entrant"):
+            audio_bytes = nouveau_client_vocal.read()
+            prompt_audio = [
+                "Écoute cette note vocale de client. Rédige une réponse professionnelle avec les tarifs de l'établissement :", 
+                {"mime_type": nouveau_client_vocal.type, "data": audio_bytes}
+            ]
+            reponse_vocal_auto = model_assistant.generate_content(prompt_audio).text
+            st.session_state.historique_messages.insert(0, {
+                "type": "Vocal",
+                "client": "[Note Vocale du Client]",
+                "reponse": reponse_vocal_auto,
+                "statut": "🤖 Géré par l'IA (Vocal)"
+            })
+            st.success("Vocal analysé et consigné !")
+
+# Affichage de l'historique et du journal pour le gérant
+st.markdown("---")
+st.markdown("### 📋 Journal de bord & Historique des discussions")
+
+if len(st.session_state.historique_messages) == 0:
+    st.info("Aucun message pour le moment. Le journal est vide.")
+else:
+    for i, item in enumerate(st.session_state.historique_messages):
+        with st.container():
+            st.markdown(f"**Échange n°{len(st.session_state.historique_messages) - i}** — *Statut : {item['statut']}*")
+            st.text(f"Client : {item['client']}")
+            st.info(f"Réponse préparée par l'IA :\n\n{item['reponse']}")
             
-            st.success("Réponse préparée par l'IA :")
-            st.write(texte_reponse)
-            
-            # Lien WhatsApp direct
+            # Bouton pour envoyer sur WhatsApp en un clic
             import urllib.parse
-            texte_encode = urllib.parse.quote(texte_reponse)
+            texte_encode = urllib.parse.quote(item['reponse'])
             num_clean = str(contact_tel_val).replace("+", "").replace(" ", "").strip()
             lien_whatsapp = f"https://wa.me/{num_clean}?text={texte_encode}"
             
             st.markdown(f'''
                 <a href="{lien_whatsapp}" target="_blank">
-                    <button style="background-color:#25D366; color:white; border:none; padding:12px 24px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:16px;">
-                        📲 Ouvrir WhatsApp avec la réponse prête
+                    <button style="background-color:#25D366; color:white; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:14px;">
+                        📲 Reprendre le relais et envoyer sur WhatsApp
                     </button>
                 </a>
             ''', unsafe_allow_html=True)
-
-# TAB 2 : Gestion par Vocal (Audio)
-with tab2:
-    audio_file = st.file_uploader("Importer le vocal du client (.mp3, .wav, .m4a)", type=["mp3", "wav", "m4a", "ogg"])
-    
-    if audio_file is not None:
-        st.audio(audio_file, format='audio/wav')
-        if st.button("🎙️ Analyser le vocal multilingue et répondre"):
-            audio_bytes = audio_file.read()
-            prompt_audio = [
-                "Écoute cette note vocale (qui peut être en français local, en langue d'Afrique de l'Ouest, en anglais ou en chinois). Réponds-lui poliment en adoptant le même ton et en utilisant les tarifs de l'établissement :", 
-                {"mime_type": audio_file.type, "data": audio_bytes}
-            ]
+            st.markdown("---")
             
-            response = model_assistant.generate_content(prompt_audio)
-            texte_reponse_vocal = response.text
-            
-            st.success("🗣️ L'IA a compris le vocal :")
-            st.write(texte_reponse_vocal)
-            
-            # Lien WhatsApp pour le vocal
-            import urllib.parse
-            texte_encode_vocal = urllib.parse.quote(texte_reponse_vocal)
-            num_clean = str(contact_tel_val).replace("+", "").replace(" ", "").strip()
-            lien_whatsapp_vocal = f"https://wa.me/{num_clean}?text={texte_encode_vocal}"
-            
-            st.markdown(f'''
-                <a href="{lien_whatsapp_vocal}" target="_blank">
-                    <button style="background-color:#25D366; color:white; border:none; padding:12px 24px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:16px;">
-                        📲 Envoyer la réponse sur WhatsApp
-                    </button>
-                </a>
-            ''', unsafe_allow_html=True)
