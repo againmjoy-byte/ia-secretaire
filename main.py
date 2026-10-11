@@ -1,6 +1,21 @@
 import pandas as pd
 import streamlit as st
 import datetime
+import streamlit as st
+import google.generativeai as genai
+
+# 1. Configuration de la page (doit être le tout premier truc Streamlit)
+st.set_page_config(page_title="Secrétaire IA Multilingue")
+
+# 2. Configuration de la clé API en premier
+api_key = st.secrets.get("GEMINI_API_KEY")
+if not api_key:
+    st.error("⚠️ La clé API 'GEMINI_API_KEY' est introuvable dans les secrets.")
+else:
+    genai.configure(api_key=api_key)
+
+# 3. Création du modèle juste après la configuration de la clé
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 # ==========================================
 # 🔒 SÉCURITÉ & VÉRIFICATION DE L'ABONNEMENT
