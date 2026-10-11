@@ -1,7 +1,44 @@
 import pandas as pd
 import streamlit as st
 import datetime
+# ==========================================
+# 🔒 SÉCURITÉ & VÉRIFICATION DE L'ABONNEMENT
+# ==========================================
+st.subheader("🔒 Accès Sécurisé - Secrétaire IA")
 
+st.info("""
+**Comment accéder à l'application ?**
+* **1er mois / Mise en service :** 40 000 FCFA
+* **Abonnement mensuel :** 15 000 FCFA / mois
+
+Effectuez votre paiement sur notre numéro Mobile Money : **72756375**, puis contactez-nous pour recevoir votre code d'accès personnel.
+""")
+
+code_client = st.text_input("Entrez votre code d'abonnement :", type="password")
+
+# Tant que le code n'est pas rempli ou valide, on BLOQUE tout le reste du fichier !
+if not code_client:
+    st.warning("Veuillez entrer votre code d'accès ci-dessus pour débloquer l'application.")
+    st.stop()
+
+if 'df_codes' in locals() and df_codes is not None and 'code' in df_codes.columns:
+    client_row = df_codes[df_codes['code'].astype(str).str.strip() == code_client.strip()]
+    
+    if not client_row.empty:
+        if 'DateExpiration' in df_codes.columns:
+            try:
+                date_exp_str = str(client_row['DateExpiration'].values[0]).strip()
+                date_expiration = datetime.datetime.strptime(date_exp_str[:10], "%Y-%m-%d").date()
+                if datetime.date.today() > date_expiration:
+                    st.error("❌ Votre abonnement a expiré. Veuillez effectuer votre renouvellement de 15 000 FCFA au **72756375**.")
+                    st.stop()
+            except Exception:
+                pass
+        st.success("✅ Accès autorisé ! Bienvenue dans votre Secrétaire IA.")
+    else:
+        st.error("❌ Code invalide. Veuillez effectuer votre paiement au **72756375**.")
+        st.stop()
+                
 # --- AUTOMATISATION DE L'ESSAI GRATUIT ET SÉCURITÉ IANO ---
 
 # Si c'est la toute première ouverture par le client, on démarre l'essai automatiquement
@@ -205,53 +242,3 @@ def charger_codes_promo():
 df_codes = charger_codes_promo()
 import datetime
 
-# --- ÉCRAN DE PAIEMENT ET VÉRIFICATION DE LA DATE D'EXPIRATION ---
-st.markdown("---")
-st.subheader("🔒 Accès Sécurisé - Secrétaire IA")
-
-# Instructions et numéro de paiement visible immédiatement
-st.info("""
-**Comment accéder à l'application ?**
-* **1er mois / Mise en service :** 40 000 FCFA
-* **Abonnement mensuel :** 15 000 FCFA / mois
-
-Effectuez votre paiement sur notre numéro Mobile Money : **72756375**, puis contactez-nous pour recevoir votre code d'accès personnel.
-""")
-
-code_client = st.text_input("Entrez votre code d'abonnement :", type="password")
-
-if code_client:
-    if df_codes is not None and 'code' in df_codes.columns:
-        # Recherche de la ligne correspondant au code saisi
-        client_row = df_codes[df_codes['code'].astype(str).str.strip() == code_client.strip()]
-        
-        if not client_row.empty:
-            # Vérification de la date d'expiration si la colonne existe
-            if 'DateExpiration' in df_codes.columns:
-                try:
-                    date_exp_str = str(client_row['DateExpiration'].values[0]).strip()
-                    date_expiration = datetime.datetime.strptime(date_exp_str[:10], "%Y-%m-%d").date()
-                    date_du_jour = datetime.date.today()
-                    
-                    if date_du_jour <= date_expiration:
-                        st.success("✅ Accès autorisé ! Bienvenue dans votre Secrétaire IA.")
-                        # L'application continue normalement ici
-                    else:
-                        st.error("❌ Votre abonnement a expiré. Veuillez effectuer votre renouvellement de 15 000 FCFA sur le **72756375**.")
-                        st.stop()
-                except Exception as e:
-                    # En cas de souci avec le format de la date, on autorise par sécurité
-                    st.success("✅ Accès autorisé !")
-            else:
-                st.success("✅ Accès autorisé !")
-        else:
-            st.error("❌ Code invalide ou inconnu. Veuillez effectuer votre paiement (40 000 FCFA initial ou 15 000 FCFA de renouvellement) au **72756375**.")
-            st.stop()
-    else:
-        st.error("❌ Erreur de connexion avec la base de données des abonnés.")
-        st.stop()
-else:
-    st.warning("Veuillez entrer votre code d'accès ci-dessus pour débloquer l'application.")
-    st.stop()
-
-        
