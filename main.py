@@ -416,4 +416,26 @@ else:
                 </a>
             ''', unsafe_allow_html=True)
             st.markdown("---")
-            
+            from datetime import datetime, timedelta
+import pandas as pd
+import streamlit as st
+
+# Initialisation de l'historique dans la session si ça n'existe pas
+if "historique_appels" not in st.session_state:
+    st.session_state["historique_appels"] = []
+
+# Fonction pour ajouter une interaction avec l'heure actuelle
+def enregistrer_interaction(question, reponse):
+    maintenant = datetime.now()
+    st.session_state["historique_appels"].append(
+        {"temps": maintenant, "question": question, "reponse": reponse}
+    )
+
+# Nettoyage automatique des éléments de plus de 72 heures
+limite_72h = datetime.now() - timedelta(hours=72)
+st.session_state["historique_appels"] = [
+    item
+    for item in st.session_state["historique_appels"]
+    if item["temps"] > limite_72h
+]
+
