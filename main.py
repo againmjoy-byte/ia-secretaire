@@ -72,11 +72,7 @@ if user_input:
             
         except Exception as e:
             st.error(f"Erreur lors de la génération : {e}")
-          import streamlit as st
-import pandas as pd
-import google.generativeai as genai
-from datetime import datetime
-
+          
 # --- 1. CONFIGURATION DE LA PAGE ---
 st.set_page_config(
     page_title="Secrétaire IA - Gestion Professionnelle",
