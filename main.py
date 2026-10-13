@@ -17,10 +17,9 @@ if not api_key:
     st.error("⚠️ Clé API GEMINI_API_KEY manquante dans les secrets Streamlit.")
     st.stop()
 
-genai.configure(api_key=api_key)
 model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
-    system_instruction="Tu es la Secrétaire IA Virtuelle. Réponds de manière claire, directe et utile."
+    model_name="gemini-pro",
+    system_instruction="Tu es la Secrétaire IA Virtuelle professionnelle. Tu aides le gérant dans ses activités (hôtel, atelier, gestion)."
 )
 
 # --- 3. GESTION DE L'HISTORIQUE EN SESSION ---
