@@ -19,12 +19,6 @@ if not api_key:
 
 model = genai.GenerativeModel("gemini-3.8-flash")
 
-    system_instruction="""Tu es la Secrétaire IA Virtuelle du gérant. 
-    Tu dois être capable de comprendre et de répondre dans les langues locales d'Afrique de l'Ouest (comme le fon, le yoruba, le mina, le dioula, etc.) si l'utilisateur te parle dans ces langues. 
-    Sois toujours ultra-courte, claire et directe dans tes réponses."""
-)
-
-
 
 # --- 3. GESTION DE L'HISTORIQUE EN SESSION ---
 if "historique_messages" not in st.session_state:
