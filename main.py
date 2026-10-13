@@ -1013,4 +1013,34 @@ if user_input:
                 st.session_state.messages.append({"role": "assistant", "content": bot_reply})
             except Exception as e:
                 st.error(f"Erreur : {e}")
+                # --- SECTION AJOUTÉE POUR CORRIGER LE CHAT SANS EFFACER LE HAUT ---
+import streamlit as st
+import google.generativeai as genai
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Affichage de l'historique
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
+
+# Zone de saisie en bas
+user_input = st.chat_input("Écrivez votre message ici...")
+
+if user_input:
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.write(user_input)
+
+    with st.chat_message("assistant"):
+        with st.spinner("Réponse..."):
+            try:
+                # Utilise le modèle configuré plus haut dans ton code
+                response = model.generate_content(user_input)
+                bot_reply = response.text
+                st.write(bot_reply)
+                st.session_state.messages.append({"role": "assistant", "content": bot_reply})
+            except Exception as e:
+                st.error(f"Erreur : {e}")
                 
