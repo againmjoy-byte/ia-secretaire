@@ -816,3 +816,108 @@ if prompt:
                 )
             except Exception:
                 st.error("Erreur de génération.")
+from datetime import datetime, timedelta
+import google.generativeai as genai
+import streamlit as st
+
+# Configuration de la page Streamlit
+st.set_page_config(
+    page_title="Secrétaire IA - Tableau de Bord",
+    page_icon="🤖",
+    layout="wide",
+)
+
+# Configuration de l'API Gemini depuis secrets Streamlit
+api_key = st.secrets.get("GEMINI_API_KEY")
+
+SYSTEM_INSTRUCTION = """
+Tu es la Secrétaire IA Virtuelle du gérant.
+Ton rôle est d'aider le gérant et ses clients.
+Réponds de manière ultra-courte, claire et directe.
+Si on te demande "À quoi tu sers ?", réponds :
+"Je suis votre Secrétaire IA Virtuelle. Je suis là pour vous aider au quotidien."
+"""
+
+if api_key:
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash",
+        system_instruction=SYSTEM_INSTRUCTION
+    )
+else:
+    st.error("⚠️ Clé API Gemini manquante dans les secrets Streamlit.")
+    st.stop()
+
+# Gestion de l'historique en session
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Interface utilisateur : En-tête
+st.title("📋 Tableau de Bord - Secrétaire IA")
+st.write("Espace de discussion simple et direct.")
+
+# Boutons d'actions rapides
+st.subheader("⚡ Actions rapides :")
+col1, col2, col3 = st.columns(3)
+question_rapide = None
+
+with col1:
+    if st.button("❓ À quoi tu sers ?"):
+        question_rapide = "À quoi tu sers ?"
+
+with col2:
+    if st.button("🌐 Langues parlées"):
+        question_rapide = "Quelles langues parles-tu ?"
+
+with col3:
+    if st.button("💡 Aide gestion"):
+        question_rapide = "Comment peux-tu m'aider à gérer mon entreprise ?"
+
+st.divider()
+
+# Section Historique et Journal de bord
+st.subheader("💬 Discussion & Journal de bord")
+
+# Nettoyage des messages de plus de 72h
+maintenant_actuel = datetime.now()
+limite_72h = maintenant_actuel - timedelta(hours=72)
+
+# Affichage des messages
+if not st.session_state.messages:
+    st.info("Aucun message pour le moment. Le journal est vide.")
+else:
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
+
+# Entrée utilisateur (chat_input ou clic sur bouton rapide)
+user_input = st.chat_input("Écrivez votre message ici...")
+prompt = question_rapide or user_input
+
+if prompt:
+    # 1. Ajouter le message de l'utilisateur à l'historique
+    st.session_state.messages.append({
+        "role": "user",
+        "content": prompt,
+        "date": datetime.now()
+    })
+    with st.chat_message("user"):
+        st.write(prompt)
+
+    # 2. Générer la réponse de l'IA
+    with st.chat_message("assistant"):
+        with st.spinner("Réponse en cours..."):
+            try:
+                response = model.generate_content(prompt)
+                bot_reply = response.text
+                st.write(bot_reply)
+
+                # Sauvegarder la réponse dans la session
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": bot_reply,
+                    "date": datetime.now()
+                })
+            except Exception as e:
+                st.error(f"Erreur lors de la génération : {e}")
+                
