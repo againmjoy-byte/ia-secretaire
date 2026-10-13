@@ -590,3 +590,147 @@ if prompt:
                 )
             except Exception as e:
                 st.error("Erreur de connexion avec l'IA.")
+from datetime import datetime, timedelta
+import google.generativeai as genai
+import streamlit as st
+
+# ==========================================
+# 1. CONFIGURATION DE LA PAGE
+# ==========================================
+st.set_page_config(
+    page_title="Secrétaire IA - Tableau de Bord",
+    page_icon="🎙️",
+    layout="wide",
+)
+
+st.markdown(
+    """
+    <style>
+    .big-title { font-size: 26px; font-weight: bold; color: #1E3A8A; text-align: center; }
+    .subtitle { font-size: 15px; color: #4B5563; text-align: center; margin-bottom: 20px; }
+    </style>
+""",
+    unsafe_allow_html=True,
+)
+
+# ==========================================
+# 2. CONFIGURATION DE L'IA
+# ==========================================
+api_key = st.secrets.get("GEMINI_API_KEY")
+
+SYSTEM_INSTRUCTION = """
+Tu es la Secrétaire IA Virtuelle du gérant.
+Ton rôle est d'aider le gérant et ses clients dans la gestion quotidienne de leur établissement.
+
+RÈGLES DE RÉPONSE :
+1. Réponds de manière ultra-courte, claire et directe.
+2. Si on te demande "À quoi tu sers ?", réponds précisément :
+   "Je suis votre Secrétaire IA Virtuelle. Je suis destinée à vous servir en secrétariat dans tous les domaines (gestion, accueil, information). Je peux parler presque toutes les langues, y compris les langues locales d'Afrique de l'Ouest (Éwé, Fon, Baoulé, Dioula, Wolof, etc.)."
+3. Sois très chaleureuse et professionnelle.
+"""
+
+if api_key:
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash", system_instruction=SYSTEM_INSTRUCTION
+    )
+else:
+    st.error(
+        "⚠️ Clé API Gemini non configurée dans les Secrets Streamlit.", icon="⚠️"
+    )
+    st.stop()
+
+# ==========================================
+# 3. GESTION DES MESSAGES & HISTORIQUE (72H)
+# ==========================================
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Filtrer les messages de moins de 72h
+maintenant_actuel = datetime.now()
+limite_72h = maintenant_actuel - timedelta(hours=72)
+
+st.session_state.messages = [
+    msg
+    for msg in st.session_state.messages
+    if msg.get("date", maintenant_actuel) > limite_72h
+]
+
+# ==========================================
+# 4. INTERFACE GRAPHIQUE DU TABLEAU DE BORD
+# ==========================================
+st.markdown(
+    '<div class="big-title">🎙️ Votre Secrétaire IA Personnelle</div>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<div class="subtitle">Tableau de bord simplifié pour le gérant</div>',
+    unsafe_allow_html=True,
+)
+
+# Indicateurs visuels
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric(label="🟢 Statut", value="En ligne")
+with col2:
+    st.metric(label="💬 Mode", value="Multilingue")
+with col3:
+    st.metric(label="⏳ Historique", value=f"{len(st.session_state.messages)}")
+
+st.divider()
+
+# Boutons rapides pour poser des questions en un clic
+st.subheader("💡 Actions rapides :")
+b1, b2, b3 = st.columns(3)
+question_rapide = None
+
+with b1:
+    if st.button("❓ À quoi tu sers ?", use_container_width=True):
+        question_rapide = "À quoi tu sers ?"
+with b2:
+    if st.button("🌍 Langues parlées", use_container_width=True):
+        question_rapide = "Quelles langues parles-tu ?"
+with b3:
+    if st.button("🏨 Aide gestion", use_container_width=True):
+        question_rapide = (
+            "Comment peux-tu m'aider à gérer mon établissement ?"
+        )
+
+st.subheader("💬 Discussion")
+
+# Affichage de l'historique
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
+
+# Entrée utilisateur
+user_input = st.chat_input("Écrivez votre message ici...")
+prompt = question_rapide or user_input
+
+if prompt:
+    # Enregistrer la question de l'utilisateur
+    st.session_state.messages.append(
+        {"role": "user", "content": prompt, "date": datetime.now()}
+    )
+    with st.chat_message("user"):
+        st.write(prompt)
+
+    # Générer la réponse
+    with st.chat_message("assistant"):
+        with st.spinner("Réponse en cours..."):
+            try:
+                response = model.generate_content(prompt)
+                bot_reply = response.text
+                st.write(bot_reply)
+
+                # Enregistrer la réponse de l'IA
+                st.session_state.messages.append(
+                    {
+                        "role": "assistant",
+                        "content": bot_reply,
+                        "date": datetime.now(),
+                    }
+                )
+            except Exception as e:
+                st.error("Erreur lors de la génération de la réponse.")
+                
