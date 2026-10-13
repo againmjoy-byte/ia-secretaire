@@ -911,4 +911,73 @@ if prompt:
                 })
             except Exception as e:
                 st.error(f"Erreur lors de la génération : {e}")
+import streamlit as st
+import google.generativeai as genai
+from datetime import datetime
+
+# 1. Configuration de la page
+st.set_page_config(page_title="Secrétaire IA", page_icon="🤖", layout="wide")
+
+# 2. Clé API et Modèle Gemini
+api_key = st.secrets.get("GEMINI_API_KEY")
+
+if not api_key:
+    st.error("⚠️ Clé API GEMINI_API_KEY manquante dans les secrets.")
+    st.stop()
+
+genai.configure(api_key=api_key)
+model = genai.GenerativeModel(
+    model_name="gemini-1.5-flash",
+    system_instruction="Tu es la Secrétaire IA Virtuelle. Réponds de manière courte, claire et efficace."
+)
+
+# 3. Système d'accès par code d'abonnement
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.title("🔑 Connexion")
+    code_saisi = st.text_input("Entrez votre code d'abonnement :", type="password")
+    
+    # Remplacer '12345' par la logique de validation ou ton code souhaité
+    if code_saisi:
+        if code_saisi == st.secrets.get("CODE_ACCES", "12345"):
+            st.session_state.authenticated = True
+            st.success("✅ Accès autorisé ! Bienvenue dans votre Secrétaire IA.")
+            st.rerun()
+        else:
+            st.error("❌ Code incorrect.")
+    st.stop()
+
+# 4. Interface principale une fois connecté
+st.title("🤖 Secrétaire IA Multilingue")
+
+# Historique des messages
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Affichage des anciens messages
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.write(msg["content"])
+
+# Zone de saisie unique (Chat Input fixe en bas)
+prompt = st.chat_input("Écrivez votre message ici...")
+
+if prompt:
+    # Affiche le message de l'utilisateur
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.write(prompt)
+
+    # Génère et affiche la réponse
+    with st.chat_message("assistant"):
+        with st.spinner("Réponse..."):
+            try:
+                response = model.generate_content(prompt)
+                bot_reply = response.text
+                st.write(bot_reply)
+                st.session_state.messages.append({"role": "assistant", "content": bot_reply})
+            except Exception as e:
+                st.error(f"Erreur d'exécution : {e}")
 
