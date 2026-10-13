@@ -816,7 +816,6 @@ if prompt:
                 )
             except Exception:
                 st.error("Erreur de génération.")
-from datetime import datetime, timedelta
 import google.generativeai as genai
 import streamlit as st
 
@@ -834,8 +833,6 @@ SYSTEM_INSTRUCTION = """
 Tu es la Secrétaire IA Virtuelle du gérant.
 Ton rôle est d'aider le gérant et ses clients.
 Réponds de manière ultra-courte, claire et directe.
-Si on te demande "À quoi tu sers ?", réponds :
-"Je suis votre Secrétaire IA Virtuelle. Je suis là pour vous aider au quotidien."
 """
 
 if api_key:
@@ -878,10 +875,6 @@ st.divider()
 # Section Historique et Journal de bord
 st.subheader("💬 Discussion & Journal de bord")
 
-# Nettoyage des messages de plus de 72h
-maintenant_actuel = datetime.now()
-limite_72h = maintenant_actuel - timedelta(hours=72)
-
 # Affichage des messages
 if not st.session_state.messages:
     st.info("Aucun message pour le moment. Le journal est vide.")
@@ -898,8 +891,7 @@ if prompt:
     # 1. Ajouter le message de l'utilisateur à l'historique
     st.session_state.messages.append({
         "role": "user",
-        "content": prompt,
-        "date": datetime.now()
+        "content": prompt
     })
     with st.chat_message("user"):
         st.write(prompt)
@@ -915,9 +907,8 @@ if prompt:
                 # Sauvegarder la réponse dans la session
                 st.session_state.messages.append({
                     "role": "assistant",
-                    "content": bot_reply,
-                    "date": datetime.now()
+                    "content": bot_reply
                 })
             except Exception as e:
                 st.error(f"Erreur lors de la génération : {e}")
-                
+
