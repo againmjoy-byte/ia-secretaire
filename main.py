@@ -981,3 +981,46 @@ if prompt:
             except Exception as e:
                 st.error(f"Erreur d'exécution : {e}")
 
+import streamlit as st
+import google.generativeai as genai
+
+st.set_page_config(page_title="Secrétaire IA", page_icon="🤖", layout="wide")
+
+api_key = st.secrets.get("GEMINI_API_KEY")
+
+if not api_key:
+    st.error("⚠️ Clé API GEMINI_API_KEY manquante dans les secrets Streamlit.")
+    st.stop()
+
+genai.configure(api_key=api_key)
+model = genai.GenerativeModel(
+    model_name="gemini-1.5-flash",
+    system_instruction="Tu es une secrétaire IA efficace."
+)
+
+st.title("🤖 Secrétaire IA - Application")
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
+
+user_input = st.chat_input("Écrivez votre message ici...")
+
+if user_input:
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.write(user_input)
+
+    with st.chat_message("assistant"):
+        with st.spinner("Réponse..."):
+            try:
+                response = model.generate_content(user_input)
+                bot_reply = response.text
+                st.write(bot_reply)
+                st.session_state.messages.append({"role": "assistant", "content": bot_reply})
+            except Exception as e:
+                st.error(f"Erreur : {e}")
+                
