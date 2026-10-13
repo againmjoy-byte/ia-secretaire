@@ -17,8 +17,8 @@ if not api_key:
     st.error("⚠️ Clé API GEMINI_API_KEY manquante dans les secrets Streamlit.")
     st.stop()
 
-model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
+model = genai.GenerativeModel("gemini-3.8-flash")
+
     system_instruction="""Tu es la Secrétaire IA Virtuelle du gérant. 
     Tu dois être capable de comprendre et de répondre dans les langues locales d'Afrique de l'Ouest (comme le fon, le yoruba, le mina, le dioula, etc.) si l'utilisateur te parle dans ces langues. 
     Sois toujours ultra-courte, claire et directe dans tes réponses."""
