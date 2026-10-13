@@ -439,3 +439,154 @@ st.session_state["historique_appels"] = [
     if item["temps"] > limite_72h
 ]
 
+from datetime import datetime, timedelta
+import google.generativeai as genai
+import pandas as pd
+import streamlit as st
+
+# ==========================================
+# 1. CONFIGURATION DE LA PAGE & STYLE VISUEL
+# ==========================================
+st.set_page_config(
+    page_title="Secrétaire IA - Tableau de Bord",
+    page_icon="🎙️",
+    layout="wide",
+)
+
+# Masquer les styles complexes pour un design très simple et épuré
+st.markdown(
+    """
+    <style>
+    .big-title { font-size: 28px; font-weight: bold; color: #1E3A8A; text-align: center; }
+    .subtitle { font-size: 16px; color: #4B5563; text-align: center; margin-bottom: 20px; }
+    .card { background-color: #F3F4F6; padding: 15px; border-radius: 12px; margin-bottom: 10px; }
+    </style>
+""",
+    unsafe_allow_allow_html=True,
+)
+
+# ==========================================
+# 2. INITIALISATION DE L'IA ET DU RÔLE
+# ==========================================
+api_key = st.secrets.get("GEMINI_API_KEY")
+
+SYSTEM_INSTRUCTION = """
+Tu es la Secrétaire IA Virtuelle du gérant.
+Ton rôle est d'aider le gérant et ses clients dans la gestion quotidienne de leur établissement (Hôtel, Atelier, Commerce, etc.).
+
+RÈGLES IMPÉRATIVES DE RÉPONSE :
+1. Réponds toujours de manière ultra-courte, claire et directe (pas de longs paragraphes ou de dissertations).
+2. Si on te demande "À quoi tu sers ?" ou "Tu es destinée à faire quoi ?", réponds précisément :
+   "Je suis votre Secrétaire IA Virtuelle. Je suis destinée à vous servir en secrétariat dans tous les domaines (gestion, accueil, information). Je peux parler presque toutes les langues, y compris les langues locales d'Afrique de l'Ouest (Éwé, Fon, Baoulé, Dioula, Wolof, etc.)."
+3. Sois très chaleureuse, respectueuse et facile à comprendre.
+"""
+
+if api_key:
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash", system_instruction=SYSTEM_INSTRUCTION
+    )
+else:
+    st.error(
+        "⚠️ Clé API Gemini non configurée dans les Secrets Streamlit.", icon="⚠️"
+    )
+    st.stop()
+
+# ==========================================
+# 3. GESTION DE L'HISTORIQUE (EFFACEMENT 72H)
+# ==========================================
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Conserver uniquement les messages de moins de 72 heures (3 jours)
+limite_72h = datetime.now() - timedelta(hours=72)
+st.session_state.messages = [
+    msg
+    for msg in st.session_state.messages
+    if msg.get("date", datetime.now()) > limite_72h
+]
+
+# ==========================================
+# 4. TABLEAU DE BORD (INTERFACE VISUELLE)
+# ==========================================
+
+# En-tête simple et clair
+st.markdown(
+    '<div class="big-title">🎙️ Votre Secrétaire IA Personnelle</div>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<div class="subtitle">Discutez facilement avec votre IA ou posez vos questions ci-dessous</div>',
+    unsafe_allow_html=True,
+)
+
+# Indicateurs visuels rapides (Statistiques simples)
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric(label="🟢 Statut IA", value="En ligne")
+with col2:
+    st.metric(label="💬 Discuter", value="Français & Langues locales")
+with col3:
+    st.metric(
+        label="⏳ Historique conservé",
+        value=f"{len(st.session_state.messages)} échanges (72h max)",
+    )
+
+st.divider()
+
+# Boutons d'accès rapide aux questions fréquentes (pour ceux qui ne veulent pas taper de texte)
+st.subheader("💡 Questions rapides (cliquez pour poser) :")
+btn_col1, btn_col2, btn_col3 = st.columns(3)
+
+question_rapide = None
+with btn_col1:
+    if st.button("❓ À quoi tu sers ?", use_container_width=True):
+        question_rapide = "Tu es destinée pour faire quoi ?"
+with btn_col2:
+    if st.button("🌍 Quelles langues parles-tu ?", use_container_width=True):
+        question_rapide = "Quelles langues locales d'Afrique peux-tu parler ?"
+with btn_col3:
+    if st.button("🏨 Comment peux-tu m'aider ?", use_container_width=True):
+        question_rapide = (
+            "Comment peux-tu m'aider à gérer mon établissement ?"
+        )
+
+# Affichage des échanges précédents
+st.subheader("💬 Espace de Discussion")
+
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
+
+# Zone de saisie utilisateur
+user_input = st.chat_input("Écrivez votre message ici...")
+
+# Si l'utilisateur clique sur un bouton rapide ou tape un message
+prompt = question_rapide or user_input
+
+if prompt:
+    # 1. Enregistrer et afficher le message de l'utilisateur
+    st.session_state.messages.append(
+        {"role": "user", "content": prompt, "date": datetime.now()}
+    )
+    with st.chat_message("user"):
+        st.write(prompt)
+
+    # 2. Générer la réponse de l'IA
+    with st.chat_message("assistant"):
+        with st.spinner("La secrétaire répond..."):
+            try:
+                response = model.generate_content(prompt)
+                bot_reply = response.text
+                st.write(bot_reply)
+
+                # Enregistrer la réponse de l'IA
+                st.session_state.messages.append(
+                    {
+                        "role": "assistant",
+                        "content": bot_reply,
+                        "date": datetime.now(),
+                    }
+                )
+            except Exception as e:
+                st.error("Erreur de connexion avec l'IA.")
