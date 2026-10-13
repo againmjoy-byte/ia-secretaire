@@ -734,3 +734,85 @@ if prompt:
             except Exception as e:
                 st.error("Erreur lors de la génération de la réponse.")
                 
+from datetime import datetime, timedelta
+import google.generativeai as genai
+import streamlit as st
+
+# Configuration de la page
+st.set_page_config(
+    page_title="Secrétaire IA - Tableau de Bord",
+    page_icon="🎙️",
+    layout="wide",
+)
+
+# Configuration de l'IA
+api_key = st.secrets.get("GEMINI_API_KEY")
+
+SYSTEM_INSTRUCTION = """
+Tu es la Secrétaire IA Virtuelle du gérant.
+Ton rôle est d'aider le gérant et ses clients dans la gestion de leur établissement.
+Réponds de manière ultra-courte, claire et directe.
+Si on te demande "À quoi tu sers ?", réponds précisément :
+"Je suis votre Secrétaire IA Virtuelle. Je suis destinée à vous servir en secrétariat dans tous les domaines (gestion, accueil, information). Je peux parler presque toutes les langues, y compris les langues locales d'Afrique de l'Ouest (Éwé, Fon, Baoulé, Dioula, Wolof, etc.)."
+"""
+
+if api_key:
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash", system_instruction=SYSTEM_INSTRUCTION
+    )
+else:
+    st.error("⚠️ Clé API Gemini manquante dans les secrets.")
+    st.stop()
+
+# Gestion de l'historique
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Interface du tableau de bord
+st.title("🎙️ Tableau de Bord - Secrétaire IA")
+st.write("Espace de discussion simple et direct pour le gérant.")
+
+# Boutons d'actions rapides
+st.subheader("💡 Actions rapides :")
+col1, col2, col3 = st.columns(3)
+question_rapide = None
+
+with col1:
+    if st.button("❓ À quoi tu sers ?"):
+        question_rapide = "À quoi tu sers ?"
+with col2:
+    if st.button("🌍 Langues parlées"):
+        question_rapide = "Quelles langues parles-tu ?"
+with col3:
+    if st.button("🏨 Aide gestion"):
+        question_rapide = "Comment peux-tu m'aider à gérer mon établissement ?"
+
+st.divider()
+st.subheader("💬 Discussion")
+
+# Affichage des messages
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
+
+# Entrée utilisateur
+user_input = st.chat_input("Écrivez votre message ici...")
+prompt = question_rapide or user_input
+
+if prompt:
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.write(prompt)
+
+    with st.chat_message("assistant"):
+        with st.spinner("Réponse..."):
+            try:
+                response = model.generate_content(prompt)
+                bot_reply = response.text
+                st.write(bot_reply)
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": bot_reply}
+                )
+            except Exception:
+                st.error("Erreur de génération.")
