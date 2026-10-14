@@ -430,7 +430,7 @@ if uploaded_image is not None:
             except Exception as e:
                 st.error(f"Erreur image : {e}")
                 
-                # --- 1. CONFIGURATION DE LA PAGE ---
+            # --- 1. CONFIGURATION DE LA PAGE ---
 st.set_page_config(
     page_title="Secrétaire IA - Gestion Professionnelle",
     page_icon="🤖",
@@ -489,7 +489,6 @@ else:
             st.write(f"**Question :** {item.get('question', '')}")
             st.info(f"**Réponse IA :** {item.get('reponse', '')}")
             
-            # Affichage du lecteur audio si un fichier vocal de réponse existe
             if 'audio_path' in item and item['audio_path'] and os.path.exists(item['audio_path']):
                 st.audio(item['audio_path'], format='audio/mp3')
                 
@@ -505,7 +504,6 @@ if user_input:
             response = model.generate_content(user_input)
             bot_reply = response.text
             
-            # Génération de la voix (TTS) pour la réponse
             tts = gTTS(text=bot_reply, lang='fr', slow=False)
             audio_path = f"temp_reponse_{datetime.now().timestamp()}.mp3"
             tts.save(audio_path)
@@ -534,7 +532,7 @@ if audio_file is not None:
     with st.spinner("Traitement de la consigne vocale..."):
         try:
             audio_bytes = audio_file.read()
-            prompt_vocal = "Tu es la secrétaire IA universelle. Écoute cette consigne vocale (qui peut venir d'un client de passage, en chinois ou autre langue, ou du gérant), traduis-la si nécessaire, mémorise les informations pour l'hôtel/atelier/boutique/clinique, et réponds pour confirmer."
+            prompt_vocal = "Tu es la secrétaire IA universelle. Écoute cette consigne vocale, traduis-la si nécessaire, mémorise les informations et réponds pour confirmer."
             
             response = model.generate_content([
                 prompt_vocal,
@@ -543,7 +541,6 @@ if audio_file is not None:
             
             bot_reply = response.text
             
-            # Génération de la voix pour la réponse du gérant
             tts = gTTS(text=bot_reply, lang='fr', slow=False)
             audio_path = f"temp_reponse_vocal_{datetime.now().timestamp()}.mp3"
             tts.save(audio_path)
@@ -572,5 +569,24 @@ if uploaded_image is not None:
         with st.spinner("Analyse de l'image..."):
             try:
                 img = Image.open(uploaded_image)
-                prompt_img = f"Voici une photo envoyée par
-
+                prompt_img = "Voici une photo envoyée par le gérant. Analyse cette image pour renseigner les clients."
+                
+                response = model.generate_content([prompt_img, img])
+                bot_reply = response.text
+                
+                tts = gTTS(text=bot_reply, lang='fr', slow=False)
+                audio_path = f"temp_reponse_photo_{datetime.now().timestamp()}.mp3"
+                tts.save(audio_path)
+                
+                st.success("Photo mémorisée avec succès !")
+                st.write(bot_reply)
+                st.audio(audio_path, format='audio/mp3')
+                
+                st.session_state.historique_messages.append({
+                    "question": f"[Photo Gérant] {description_photo}",
+                    "reponse": bot_reply,
+                    "audio_path": audio_path,
+                    "temps": datetime.now()
+                })
+            except Exception as e:
+                st.error(f"Erreur image : {e}")
