@@ -647,3 +647,135 @@ if uploaded_image is not None:
             except Exception as e:
                 st.error(f"Erreur image : {e}")
                 
+import streamlit as st
+import pandas as pd
+import google.generativeai as genai
+from datetime import datetime
+from PIL import Image
+from gtts import gTTS
+import os
+
+# --- 1. CONFIGURATION DE LA PAGE ---
+st.set_page_config(
+    page_title="Secrétaire IA - Gestion Professionnelle",
+    page_icon="🤖",
+    layout="wide"
+)
+
+# --- 2. CONFIGURATION DE LA API GEMINI ---
+api_key = st.secrets.get("GEMINI_API_KEY")
+
+if not api_key:
+    st.error("⚠️ Clé API GEMINI_API_KEY manquante dans les secrets Streamlit.")
+    st.stop()
+
+genai.configure(api_key=api_key)
+
+# Modèle stable
+model = genai.GenerativeModel("gemini-3.8-flash")
+
+# --- 3. AUTHENTIFICATION ---
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.title("🔑 Connexion Sécurisée")
+    code_saisi = st.text_input("Entrez votre code d'abonnement :", type="password", key="auth_code_clean")
+    code_valide = st.secrets.get("CODE_ACCES", "12345")
+    
+    if code_saisi:
+        if code_saisi == code_valide:
+            st.session_state.authenticated = True
+            st.success("✅ Accès autorisé !")
+            st.rerun()
+        else:
+            st.error("❌ Code incorrect.")
+    st.stop()
+
+# --- 4. HISTORIQUE ---
+if "historique_messages" not in st.session_state:
+    st.session_state.historique_messages = []
+
+# --- 5. INTERFACE ---
+st.title("🤖 Secrétaire IA Multilingue")
+st.write("Gestion unifiée : Hôtel, Atelier, Boutique, Clinique et Services.")
+
+st.divider()
+
+# --- 6. JOURNAL DE BORD ---
+st.subheader("📋 Historique des discussions")
+
+if len(st.session_state.historique_messages) == 0:
+    st.info("Aucun message pour le moment.")
+else:
+    for i, item in enumerate(st.session_state.historique_messages):
+        with st.container():
+            st.markdown(f"**Échange n°{i+1}**")
+            st.write(f"**Question :** {item.get('question', '')}")
+            st.info(f"**Réponse :** {item.get('reponse', '')}")
+            
+            # Lecture vocale de la réponse si disponible
+            if 'audio_path' in item and item['audio_path'] and os.path.exists(item['audio_path']):
+                st.audio(item['audio_path'], format='audio/mp3')
+            st.markdown("---")
+
+# --- 7. ZONE DE CHAT ---
+st.subheader("💬 Discuter avec la Secrétaire")
+user_input = st.chat_input("Écrivez votre message ici...", key="chat_input_clean")
+
+if user_input:
+    with st.spinner("Réponse en cours..."):
+        try:
+            response = model.generate_content(user_input)
+            bot_reply = response.text
+            
+            # Génération vocale naturelle
+            tts = gTTS(text=bot_reply, lang='fr', slow=False)
+            audio_path = f"reponse_{datetime.now().timestamp()}.mp3"
+            tts.save(audio_path)
+            
+            st.session_state.historique_messages.append({
+                "question": user_input,
+                "reponse": bot_reply,
+                "audio_path": audio_path,
+                "temps": datetime.now()
+            })
+            st.rerun()
+        except Exception as e:
+            st.error(f"Erreur : {e}")
+
+# --- 8. PHOTOS & DOCUMENTS ---
+st.divider()
+st.subheader("🛠️ Ajouter une photo pour la base")
+
+uploaded_image = st.file_uploader("Télécharger une image", type=["jpg", "jpeg", "png"], key="image_clean")
+
+if uploaded_image is not None:
+    st.image(uploaded_image, caption="Photo transmise", use_container_width=True)
+    description_photo = st.text_input("Expliquez à la secrétaire ce que c'est :", key="desc_clean")
+    
+    if st.button("Mémoriser", key="btn_clean"):
+        with st.spinner("Analyse..."):
+            try:
+                img = Image.open(uploaded_image)
+                prompt_img = f"Voici une photo envoyée par le gérant. Description : {description_photo}. Analyse cette image pour renseigner les clients."
+                
+                response = model.generate_content([prompt_img, img])
+                bot_reply = response.text
+                
+                tts = gTTS(text=bot_reply, lang='fr', slow=False)
+                audio_path = f"photo_{datetime.now().timestamp()}.mp3"
+                tts.save(audio_path)
+                
+                st.success("Mémorisé !")
+                st.write(bot_reply)
+                st.audio(audio_path, format='audio/mp3')
+                
+                st.session_state.historique_messages.append({
+                    "question": f"[Photo] {description_photo}",
+                    "reponse": bot_reply,
+                    "audio_path": audio_path,
+                    "temps": datetime.now()
+                })
+            except Exception as e:
+                st.error(f"Erreur : {e}")
