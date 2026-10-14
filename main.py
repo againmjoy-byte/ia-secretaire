@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import google.generativeai as genai
 from datetime import datetime, timedelta
-
+from PIL import Image
 # --- 1. CONFIGURATION DE LA PAGE ---
 st.set_page_config(
     page_title="Secrétaire IA & Gestion Multilingue",
@@ -175,4 +175,62 @@ if prompt_final:
             
         except Exception as e:
             st.error(f"Erreur lors de la génération : {e}")
-        
+        # --- MODULE GÉRANT : ENREGISTREMENT VOCAL ET ANALYSE DE PHOTOS ---
+st.divider()
+st.subheader("🛠️ Espace Gérant : Enrichir la base de la Secrétaire")
+
+# 1. Option Vocale pour le Gérant
+st.markdown("#### 🎤 Consigne vocale")
+audio_file = st.audio_input("Enregistrer une consigne vocale (prix, infos hôtel, atelier...)")
+
+if audio_file is not None:
+    with st.spinner("Analyse du vocal par la secrétaire..."):
+        try:
+            audio_bytes = audio_file.read()
+            prompt_vocal = "Tu es la secrétaire IA. Écoute cette consigne du gérant, mémorise les informations concernant l'hôtel, l'atelier, la buvette ou la boutique, et confirme que c'est enregistré."
+            
+            response = model.generate_content([
+                prompt_vocal,
+                {"mime_type": "audio/wav", "data": audio_bytes}
+            ])
+            
+            bot_reply = response.text
+            st.success("Consigne vocale enregistrée et comprise !")
+            st.write(bot_reply)
+            
+            st.session_state.historique_messages.append({
+                "question": "[Consigne Vocale Gérant]",
+                "reponse": bot_reply,
+                "temps": datetime.now()
+            })
+        except Exception as e:
+            st.error(f"Erreur vocal : {e}")
+
+# 2. Option Photo pour le Gérant (Menu, Chambres, Articles...)
+st.markdown("#### 📷 Ajouter une photo (Menu, Hôtel, Boutique, Atelier)")
+uploaded_image = st.file_uploader("Télécharger une photo pour la secrétaire", type=["jpg", "jpeg", "png"])
+
+if uploaded_image is not None:
+    st.image(uploaded_image, caption="Photo transmise pour analyse", use_container_width=True)
+    description_photo = st.text_input("Explique à la secrétaire ce que c'est (ex: 'Nouveau plat du restaurant à 2000f' ou 'Chambre VIP de l'hôtel')")
+    
+    if st.button("Enregistrer cette photo dans la base"):
+        with st.spinner("Analyse de l'image en cours..."):
+            try:
+                img = Image.open(uploaded_image)
+                prompt_img = f"Voici une photo envoyée par le gérant. Description : {description_photo}. Analyse cette image pour que tu puisses renseigner parfaitement les clients qui appelleront."
+                
+                response = model.generate_content([prompt_img, img])
+                bot_reply = response.text
+                
+                st.success("Photo enregistrée et mémorisée par la secrétaire !")
+                st.write(bot_reply)
+                
+                st.session_state.historique_messages.append({
+                    "question": f"[Photo Gérant] {description_photo}",
+                    "reponse": bot_reply,
+                    "temps": datetime.now()
+                })
+            except Exception as e:
+                st.error(f"Erreur image : {e}")
+
