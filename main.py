@@ -187,8 +187,9 @@ if audio_file is not None:
     with st.spinner("Analyse du vocal par la secrétaire..."):
         try:
             audio_bytes = audio_file.read()
-            prompt_vocal = "Tu es la secrétaire IA. Écoute cette consigne du gérant, mémorise les informations concernant l'hôtel, l'atelier, la buvette ou la boutique, et confirme que c'est enregistré."
+            prompt_vocal = "Tu es la secrétaire IA. Écoute cette consigne du gérant, mémorise les informations, et réponds-lui directement pour confirmer que c'est enregistré."
             
+            # Utilisation directe de la variable 'model' déjà configurée en haut
             response = model.generate_content([
                 prompt_vocal,
                 {"mime_type": "audio/wav", "data": audio_bytes}
@@ -196,7 +197,7 @@ if audio_file is not None:
             
             bot_reply = response.text
             st.success("Consigne vocale enregistrée et comprise !")
-            st.write(bot_reply)
+            st.write(f"**Réponse de la Secrétaire :** {bot_reply}")
             
             st.session_state.historique_messages.append({
                 "question": "[Consigne Vocale Gérant]",
@@ -212,19 +213,19 @@ uploaded_image = st.file_uploader("Télécharger une photo pour la secrétaire",
 
 if uploaded_image is not None:
     st.image(uploaded_image, caption="Photo transmise pour analyse", use_container_width=True)
-    description_photo = st.text_input("Explique à la secrétaire ce que c'est (ex: 'Nouveau plat du restaurant à 2000f' ou 'Chambre VIP de l'hôtel')")
+    description_photo = st.text_input("Explique à la secrétaire ce que c'est (ex: 'Nouveau plat du restaurant' ou 'Chambre VIP')")
     
     if st.button("Enregistrer cette photo dans la base"):
         with st.spinner("Analyse de l'image en cours..."):
             try:
                 img = Image.open(uploaded_image)
-                prompt_img = f"Voici une photo envoyée par le gérant. Description : {description_photo}. Analyse cette image pour que tu puisses renseigner parfaitement les clients qui appelleront."
+                prompt_img = f"Voici une photo envoyée par le gérant. Description : {description_photo}. Analyse cette image et réponds au gérant pour valider."
                 
                 response = model.generate_content([prompt_img, img])
                 bot_reply = response.text
                 
                 st.success("Photo enregistrée et mémorisée par la secrétaire !")
-                st.write(bot_reply)
+                st.write(f"**Réponse de la Secrétaire :** {bot_reply}")
                 
                 st.session_state.historique_messages.append({
                     "question": f"[Photo Gérant] {description_photo}",
@@ -233,4 +234,3 @@ if uploaded_image is not None:
                 })
             except Exception as e:
                 st.error(f"Erreur image : {e}")
-
