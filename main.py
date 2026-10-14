@@ -175,57 +175,133 @@ if prompt_final:
             
         except Exception as e:
             st.error(f"Erreur lors de la génération : {e}")
-        # --- MODULE GÉRANT : ENREGISTREMENT VOCAL ET ANALYSE DE PHOTOS ---
+        
+# --- 1. CONFIGURATION DE LA PAGE ---
+st.set_page_config(
+    page_title="Secrétaire IA - Gestion Professionnelle",
+    page_icon="🤖",
+    layout="wide"
+)
+
+# --- 2. CONFIGURATION DE L'API GEMINI ---
+api_key = st.secrets.get("GEMINI_API_KEY")
+
+if not api_key:
+    st.error("⚠️ Clé API GEMINI_API_KEY manquante dans les secrets Streamlit.")
+    st.stop()
+
+genai.configure(api_key=api_key)
+
+# Modèle stable configuré globalement
+model = genai.GenerativeModel("gemini-1.5-flash")
+
+# --- 3. SYSTÈME D'AUTHENTIFICATION ---
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.title("🔑 Connexion Sécurisée")
+    code_saisi = st.text_input("Entrez votre code d'abonnement :", type="password")
+    code_valide = st.secrets.get("CODE_ACCES", "12345")
+    
+    if code_saisi:
+        if code_saisi == code_valide:
+            st.session_state.authenticated = True
+            st.success("✅ Accès autorisé ! Bienvenue dans votre Secrétaire IA.")
+            st.rerun()
+        else:
+            st.error("❌ Code d'abonnement incorrect.")
+    st.stop()
+
+# --- 4. GESTION DE L'HISTORIQUE ---
+if "historique_messages" not in st.session_state:
+    st.session_state.historique_messages = []
+
+# --- 5. INTERFACE PRINCIPALE ---
+st.title("🤖 Secrétaire IA Multilingue & Tableau de Bord")
+st.write("Espace de gestion des clients, de l'hôtel, de l'atelier et des discussions.")
+
 st.divider()
-st.subheader("🛠️ Espace Gérant : Enrichir la base de la Secrétaire")
 
-# 1. Option Vocale pour le Gérant
-st.markdown("#### 🎤 Consigne vocale")
-audio_file = st.audio_input("Enregistrer une consigne vocale (prix, infos hôtel, atelier...)")
+# --- 6. JOURNAL DE BORD & HISTORIQUE ---
+st.subheader("📋 Journal de bord & Historique des discussions")
 
-if audio_file is not None:
-    with st.spinner("Analyse du vocal par la secrétaire..."):
+if len(st.session_state.historique_messages) == 0:
+    st.info("Aucun message pour le moment. Le journal est vide.")
+else:
+    for i, item in enumerate(st.session_state.historique_messages):
+        with st.container():
+            st.markdown(f"**Échange n°{i+1}**")
+            st.write(f"**Question :** {item.get('question', '')}")
+            st.info(f"**Réponse IA :** {item.get('reponse', '')}")
+            st.markdown("---")
+
+# --- 7. ZONE DE CHAT TEXTUELLE ---
+st.subheader("💬 Poser votre question (Multilingue)")
+user_input = st.chat_input("Écrivez votre message ici...")
+
+if user_input:
+    with st.spinner("Réponse en cours..."):
         try:
-            audio_bytes = audio_file.read()
-            prompt_vocal = "Tu es la secrétaire IA. Écoute cette consigne du gérant, mémorise les informations, et réponds-lui directement pour confirmer que c'est enregistré."
-            
-            # Utilisation de la variable globale 'model' sans redéfinir de nom de modèle
-            response = model.generate_content([
-                prompt_vocal,
-                {"mime_type": "audio/wav", "data": audio_bytes}
-            ])
-            
+            response = model.generate_content(user_input)
             bot_reply = response.text
-            st.success("Consigne vocale enregistrée et comprise !")
-            st.write(f"**Réponse de la Secrétaire :** {bot_reply}")
             
             st.session_state.historique_messages.append({
-                "question": "[Consigne Vocale Gérant]",
+                "question": user_input,
+                "reponse": bot_reply,
+                "temps": datetime.now()
+            })
+            
+            st.success("Réponse générée.")
+            st.rerun()
+            
+        except Exception as e:
+            st.error(f"Erreur : {e}")
+
+# --- 8. ESPACE GÉRANT : VOCAL ET PHOTOS ---
+st.divider()
+st.subheader("🛠️ Espace Gérant : Enrichir la base (Vocal & Photos)")
+
+# Section Vocal sécurisée
+audio_file = st.audio_input("Enregistrer une consigne vocale")
+if audio_file is not None:
+    with st.spinner("Traitement du vocal..."):
+        try:
+            audio_bytes = audio_file.read()
+            # Envoi sécurisé avec le modèle global
+            response = model.generate_content([
+                "Écoute cette consigne du gérant et confirme son enregistrement pour l'hôtel/atelier.",
+                {"mime_type": "audio/wav", "data": audio_bytes}
+            ])
+            bot_reply = response.text
+            st.success("Consigne vocale enregistrée !")
+            st.write(bot_reply)
+            st.session_state.historique_messages.append({
+                "question": "[Consigne Vocale]",
                 "reponse": bot_reply,
                 "temps": datetime.now()
             })
         except Exception as e:
-            st.error(f"Erreur vocal : {e}")
+            st.warning("Le format vocal direct nécessite une conversion. Utilise de préférence le texte ou les photos si besoin, ou écris directement.")
 
-# 2. Option Photo pour le Gérant (Menu, Chambres, Articles...)
-st.markdown("#### 📷 Ajouter une photo (Menu, Hôtel, Boutique, Atelier)")
-uploaded_image = st.file_uploader("Télécharger une photo pour la secrétaire", type=["jpg", "jpeg", "png"])
+# Section Photo
+uploaded_image = st.file_uploader("Télécharger une image pour la base", type=["jpg", "jpeg", "png"])
 
 if uploaded_image is not None:
-    st.image(uploaded_image, caption="Photo transmise pour analyse", use_container_width=True)
-    description_photo = st.text_input("Explique à la secrétaire ce que c'est (ex: 'Nouveau plat du restaurant' ou 'Chambre VIP')")
+    st.image(uploaded_image, caption="Photo transmise", use_container_width=True)
+    description_photo = st.text_input("Explique à la secrétaire ce que c'est (ex: 'Menu du restaurant', 'Chambre d'hôtel')")
     
-    if st.button("Enregistrer cette photo dans la base"):
-        with st.spinner("Analyse de l'image en cours..."):
+    if st.button("Mémoriser cette photo"):
+        with st.spinner("Analyse de l'image..."):
             try:
                 img = Image.open(uploaded_image)
-                prompt_img = f"Voici une photo envoyée par le gérant. Description : {description_photo}. Analyse cette image et réponds au gérant pour valider."
+                prompt_img = f"Voici une photo envoyée par le gérant. Description : {description_photo}. Analyse cette image pour renseigner les clients."
                 
                 response = model.generate_content([prompt_img, img])
                 bot_reply = response.text
                 
-                st.success("Photo enregistrée et mémorisée par la secrétaire !")
-                st.write(f"**Réponse de la Secrétaire :** {bot_reply}")
+                st.success("Photo mémorisée avec succès !")
+                st.write(bot_reply)
                 
                 st.session_state.historique_messages.append({
                     "question": f"[Photo Gérant] {description_photo}",
