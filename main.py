@@ -286,38 +286,42 @@ if uploaded_image is not None:
                 })
             except Exception as e:
                 st.error(f"Erreur image : {e}")
-# --- 9. ESPACE GÉRANT : ENREGISTREMENT VOCAL ---
+import tempfile
+import os
+
+# --- ESPACE GÉRANT : VOCAL ---
 st.divider()
 st.subheader("🎤 Espace Gérant : Consigne Vocale")
 
-audio_file = st.audio_input("Enregistrer une consigne vocale (hôtel, atelier, boutique, clinique...)", key="unique_audio_input")
+audio_file = st.audio_input("Enregistrer une consigne vocale (Hôtel, Boutique, Atelier, Clinique...)", key="unique_manager_audio")
 
 if audio_file is not None:
     with st.spinner("Traitement de la consigne vocale par la secrétaire..."):
         try:
-            # Lecture des octets du fichier audio
-            audio_bytes = audio_file.read()
+            # Création d'un fichier temporaire pour stocker le vocal proprement
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
+                tmp_file.write(audio_file.read())
+                tmp_file_path = tmp_file.name
+
+            # Envoi du fichier audio temporaire à l'API Gemini
+            audio_file_ref = genai.upload_file(tmp_file_path, mime_type="audio/wav")
             
-            prompt_vocal = "Tu es la secrétaire IA universelle. Écoute cette consigne vocale du gérant concernant ses activités (hôtel, atelier, boutique, clinique, etc.), mémorise les informations importantes, et réponds-lui directement pour confirmer que c'est enregistré."
+            prompt_vocal = "Tu es la secrétaire IA universelle. Écoute cette consigne vocale du gérant concernant ses activités (hôtel, atelier, boutique, clinique, etc.), mémorise les informations, et réponds-lui directement pour confirmer."
             
-            # Envoi du prompt et de l'audio avec son type mime
-            response = model.generate_content([
-                prompt_vocal,
-                {"mime_type": "audio/wav", "data": audio_bytes}
-            ])
-            
+            response = model.generate_content([prompt_vocal, audio_file_ref])
             bot_reply = response.text
+            
+            # Nettoyage du fichier temporaire
+            os.unlink(tmp_file_path)
+            
             st.success("Consigne vocale enregistrée et comprise !")
             st.write(f"**Réponse de la Secrétaire :** {bot_reply}")
             
-            # Ajout dans l'historique
             st.session_state.historique_messages.append({
                 "question": "[Consigne Vocale du Gérant]",
                 "reponse": bot_reply,
                 "temps": datetime.now()
             })
-            
         except Exception as e:
-            st.error(f"Erreur lors du traitement vocal : {e}")
-            st.info("Astuce : Si le format audio de ton téléphone pose problème, tu peux aussi dicter directement via le clavier vocal de ton smartphone dans la zone de texte juste en haut !")
-        
+            st.error(f"Erreur vocal : {e}")
+                
