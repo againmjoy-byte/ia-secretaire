@@ -3,6 +3,8 @@ import pandas as pd
 import google.generativeai as genai
 from datetime import datetime, timedelta
 from PIL import Image
+from gtts import gTTS
+import os
 # --- 1. CONFIGURATION DE LA PAGE ---
 st.set_page_config(
     page_title="Secrétaire IA & Gestion Multilingue",
@@ -428,4 +430,147 @@ if uploaded_image is not None:
             except Exception as e:
                 st.error(f"Erreur image : {e}")
                 
+                # --- 1. CONFIGURATION DE LA PAGE ---
+st.set_page_config(
+    page_title="Secrétaire IA - Gestion Professionnelle",
+    page_icon="🤖",
+    layout="wide"
+)
+
+# --- 2. CONFIGURATION DE L'API GEMINI ---
+api_key = st.secrets.get("GEMINI_API_KEY")
+
+if not api_key:
+    st.error("⚠️ Clé API GEMINI_API_KEY manquante dans les secrets Streamlit.")
+    st.stop()
+
+genai.configure(api_key=api_key)
+
+# Utilisation du modèle gemini-3.8-flash
+model = genai.GenerativeModel("gemini-3.8-flash")
+
+# --- 3. SYSTÈME D'AUTHENTIFICATION ---
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.title("🔑 Connexion Sécurisée")
+    code_saisi = st.text_input("Entrez votre code d'abonnement :", type="password", key="auth_code_unique")
+    code_valide = st.secrets.get("CODE_ACCES", "12345")
+    
+    if code_saisi:
+        if code_saisi == code_valide:
+            st.session_state.authenticated = True
+            st.success("✅ Accès autorisé ! Bienvenue dans votre Secrétaire IA.")
+            st.rerun()
+        else:
+            st.error("❌ Code d'abonnement incorrect.")
+    st.stop()
+
+# --- 4. GESTION DE L'HISTORIQUE ---
+if "historique_messages" not in st.session_state:
+    st.session_state.historique_messages = []
+
+# --- 5. INTERFACE PRINCIPALE ---
+st.title("🤖 Secrétaire IA Multilingue & Tableau de Bord")
+st.write("Espace de gestion unifié : Hôtel, Atelier, Boutique, Clinique et Services.")
+
+st.divider()
+
+# --- 6. JOURNAL DE BORD & HISTORIQUE ---
+st.subheader("📋 Journal de bord & Historique des discussions")
+
+if len(st.session_state.historique_messages) == 0:
+    st.info("Aucun message pour le moment. Le journal est vide.")
+else:
+    for i, item in enumerate(st.session_state.historique_messages):
+        with st.container():
+            st.markdown(f"**Échange n°{i+1}**")
+            st.write(f"**Question :** {item.get('question', '')}")
+            st.info(f"**Réponse IA :** {item.get('reponse', '')}")
+            
+            # Affichage du lecteur audio si un fichier vocal de réponse existe
+            if 'audio_path' in item and item['audio_path'] and os.path.exists(item['audio_path']):
+                st.audio(item['audio_path'], format='audio/mp3')
                 
+            st.markdown("---")
+
+# --- 7. ZONE DE CHAT TEXTUELLE UNIQUE ---
+st.subheader("💬 Poser votre question (Multilingue)")
+user_input = st.chat_input("Écrivez votre message ou commande ici...", key="chat_input_unique")
+
+if user_input:
+    with st.spinner("Réponse en cours..."):
+        try:
+            response = model.generate_content(user_input)
+            bot_reply = response.text
+            
+            # Génération de la voix (TTS) pour la réponse
+            tts = gTTS(text=bot_reply, lang='fr', slow=False)
+            audio_path = f"temp_reponse_{datetime.now().timestamp()}.mp3"
+            tts.save(audio_path)
+            
+            st.session_state.historique_messages.append({
+                "question": user_input,
+                "reponse": bot_reply,
+                "audio_path": audio_path,
+                "temps": datetime.now()
+            })
+            
+            st.success("Réponse générée.")
+            st.rerun()
+            
+        except Exception as e:
+            st.error(f"Erreur : {e}")
+
+# --- 8. ESPACE GÉRANT : VOCAL & PHOTOS ---
+st.divider()
+st.subheader("🛠️ Espace Gérant : Enrichir la base (Vocal & Photos)")
+
+# Option Vocale unique
+audio_file = st.audio_input("Enregistrer une consigne vocale (Client étranger, Hôtel, Boutique...)", key="audio_input_unique")
+
+if audio_file is not None:
+    with st.spinner("Traitement de la consigne vocale..."):
+        try:
+            audio_bytes = audio_file.read()
+            prompt_vocal = "Tu es la secrétaire IA universelle. Écoute cette consigne vocale (qui peut venir d'un client de passage, en chinois ou autre langue, ou du gérant), traduis-la si nécessaire, mémorise les informations pour l'hôtel/atelier/boutique/clinique, et réponds pour confirmer."
+            
+            response = model.generate_content([
+                prompt_vocal,
+                {"mime_type": "audio/wav", "data": audio_bytes}
+            ])
+            
+            bot_reply = response.text
+            
+            # Génération de la voix pour la réponse du gérant
+            tts = gTTS(text=bot_reply, lang='fr', slow=False)
+            audio_path = f"temp_reponse_vocal_{datetime.now().timestamp()}.mp3"
+            tts.save(audio_path)
+            
+            st.success("Consigne vocale enregistrée et traitée avec succès !")
+            st.write(f"**Réponse de la Secrétaire :** {bot_reply}")
+            st.audio(audio_path, format='audio/mp3')
+            
+            st.session_state.historique_messages.append({
+                "question": "[Consigne Vocale / Client]",
+                "reponse": bot_reply,
+                "audio_path": audio_path,
+                "temps": datetime.now()
+            })
+        except Exception as e:
+            st.error(f"Erreur vocal : {e}")
+
+# Option Photo unique
+uploaded_image = st.file_uploader("Télécharger une image pour la base", type=["jpg", "jpeg", "png"], key="image_uploader_unique")
+
+if uploaded_image is not None:
+    st.image(uploaded_image, caption="Photo transmise", use_container_width=True)
+    description_photo = st.text_input("Explique à la secrétaire ce que c'est (ex: 'Client chinois', 'Chambre VIP', 'Produit boutique')", key="image_desc_unique")
+    
+    if st.button("Mémoriser cette photo", key="image_btn_unique"):
+        with st.spinner("Analyse de l'image..."):
+            try:
+                img = Image.open(uploaded_image)
+                prompt_img = f"Voici une photo envoyée par
+
