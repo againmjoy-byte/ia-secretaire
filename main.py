@@ -194,7 +194,6 @@ genai.configure(api_key=api_key)
 
 # Modèle stable configuré globalement
 model = genai.GenerativeModel("gemini-1.5-flash")
-
 # --- 3. SYSTÈME D'AUTHENTIFICATION ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -236,9 +235,9 @@ else:
             st.info(f"**Réponse IA :** {item.get('reponse', '')}")
             st.markdown("---")
 
-# --- 7. ZONE DE CHAT TEXTUELLE ---
+# --- 7. ZONE DE CHAT TEXTUELLE UNIQUE ---
 st.subheader("💬 Poser votre question (Multilingue)")
-user_input = st.chat_input("Écrivez votre message ici...")
+user_input = st.chat_input("Écrivez votre message ou commande ici...", key="unique_chat_input")
 
 if user_input:
     with st.spinner("Réponse en cours..."):
@@ -258,40 +257,17 @@ if user_input:
         except Exception as e:
             st.error(f"Erreur : {e}")
 
-# --- 8. ESPACE GÉRANT : VOCAL ET PHOTOS ---
+# --- 8. ESPACE GÉRANT : ANALYSE DE PHOTOS ---
 st.divider()
-st.subheader("🛠️ Espace Gérant : Enrichir la base (Vocal & Photos)")
+st.subheader("🛠️ Espace Gérant : Ajouter une photo (Menu, Hôtel, Atelier)")
 
-# Section Vocal sécurisée
-audio_file = st.audio_input("Enregistrer une consigne vocale")
-if audio_file is not None:
-    with st.spinner("Traitement du vocal..."):
-        try:
-            audio_bytes = audio_file.read()
-            # Envoi sécurisé avec le modèle global
-            response = model.generate_content([
-                "Écoute cette consigne du gérant et confirme son enregistrement pour l'hôtel/atelier.",
-                {"mime_type": "audio/wav", "data": audio_bytes}
-            ])
-            bot_reply = response.text
-            st.success("Consigne vocale enregistrée !")
-            st.write(bot_reply)
-            st.session_state.historique_messages.append({
-                "question": "[Consigne Vocale]",
-                "reponse": bot_reply,
-                "temps": datetime.now()
-            })
-        except Exception as e:
-            st.warning("Le format vocal direct nécessite une conversion. Utilise de préférence le texte ou les photos si besoin, ou écris directement.")
-
-# Section Photo
-uploaded_image = st.file_uploader("Télécharger une image pour la base", type=["jpg", "jpeg", "png"])
+uploaded_image = st.file_uploader("Télécharger une image pour la base", type=["jpg", "jpeg", "png"], key="unique_image_uploader")
 
 if uploaded_image is not None:
     st.image(uploaded_image, caption="Photo transmise", use_container_width=True)
-    description_photo = st.text_input("Explique à la secrétaire ce que c'est (ex: 'Menu du restaurant', 'Chambre d'hôtel')")
+    description_photo = st.text_input("Explique à la secrétaire ce que c'est (ex: 'Menu du restaurant', 'Chambre d'hôtel')", key="unique_photo_desc")
     
-    if st.button("Mémoriser cette photo"):
+    if st.button("Mémoriser cette photo", key="unique_photo_button"):
         with st.spinner("Analyse de l'image..."):
             try:
                 img = Image.open(uploaded_image)
