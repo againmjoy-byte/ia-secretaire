@@ -590,3 +590,60 @@ if uploaded_image is not None:
                 })
             except Exception as e:
                 st.error(f"Erreur image : {e}")
+# --- ESPACE GÉRANT : MULTILINGUE, VOCAL & PHOTOS ---
+st.divider()
+st.subheader("🛠️ Espace Gérant : Enrichir la base (Vocal & Photos)")
+
+# Option Vocale
+audio_file = st.audio_input("Enregistrer une consigne vocale (Client étranger, Hôtel, Boutique...)", key="vocal_final_unique_2026")
+
+if audio_file is not None:
+    with st.spinner("Traitement de la consigne vocale..."):
+        try:
+            audio_bytes = audio_file.read()
+            prompt_vocal = "Tu es la secrétaire IA universelle. Écoute cette consigne vocale, traduis-la si nécessaire, mémorise les informations et réponds pour confirmer."
+            
+            response = model.generate_content([
+                prompt_vocal,
+                {"mime_type": "audio/wav", "data": audio_bytes}
+            ])
+            
+            bot_reply = response.text
+            st.success("Consigne vocale enregistrée et traitée avec succès !")
+            st.write(f"**Réponse de la Secrétaire :** {bot_reply}")
+            
+            st.session_state.historique_messages.append({
+                "question": "[Consigne Vocale / Client]",
+                "reponse": bot_reply,
+                "temps": datetime.now()
+            })
+        except Exception as e:
+            st.error(f"Erreur vocal : {e}")
+
+# Option Photo
+uploaded_image = st.file_uploader("Télécharger une image pour la base", type=["jpg", "jpeg", "png"], key="photo_final_unique_2026")
+
+if uploaded_image is not None:
+    st.image(uploaded_image, caption="Photo transmise", use_container_width=True)
+    description_photo = st.text_input("Explique à la secrétaire ce que c'est (ex: 'Client chinois', 'Chambre VIP', 'Produit boutique')", key="desc_final_unique_2026")
+    
+    if st.button("Mémoriser cette photo", key="btn_final_unique_2026"):
+        with st.spinner("Analyse de l'image..."):
+            try:
+                img = Image.open(uploaded_image)
+                prompt_img = "Voici une photo envoyée par le gérant. Analyse cette image pour renseigner les clients."
+                
+                response = model.generate_content([prompt_img, img])
+                bot_reply = response.text
+                
+                st.success("Photo mémorisée avec succès !")
+                st.write(bot_reply)
+                
+                st.session_state.historique_messages.append({
+                    "question": f"[Photo Gérant] {description_photo}",
+                    "reponse": bot_reply,
+                    "temps": datetime.now()
+                })
+            except Exception as e:
+                st.error(f"Erreur image : {e}")
+                
