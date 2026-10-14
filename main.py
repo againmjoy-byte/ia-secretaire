@@ -189,7 +189,7 @@ if audio_file is not None:
             audio_bytes = audio_file.read()
             prompt_vocal = "Tu es la secrétaire IA. Écoute cette consigne du gérant, mémorise les informations, et réponds-lui directement pour confirmer que c'est enregistré."
             
-            # Utilisation directe de la variable 'model' déjà configurée en haut
+            # Utilisation de la variable globale 'model' sans redéfinir de nom de modèle
             response = model.generate_content([
                 prompt_vocal,
                 {"mime_type": "audio/wav", "data": audio_bytes}
