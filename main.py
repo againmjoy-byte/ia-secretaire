@@ -286,3 +286,38 @@ if uploaded_image is not None:
                 })
             except Exception as e:
                 st.error(f"Erreur image : {e}")
+# --- 9. ESPACE GÉRANT : ENREGISTREMENT VOCAL ---
+st.divider()
+st.subheader("🎤 Espace Gérant : Consigne Vocale")
+
+audio_file = st.audio_input("Enregistrer une consigne vocale (hôtel, atelier, boutique, clinique...)", key="unique_audio_input")
+
+if audio_file is not None:
+    with st.spinner("Traitement de la consigne vocale par la secrétaire..."):
+        try:
+            # Lecture des octets du fichier audio
+            audio_bytes = audio_file.read()
+            
+            prompt_vocal = "Tu es la secrétaire IA universelle. Écoute cette consigne vocale du gérant concernant ses activités (hôtel, atelier, boutique, clinique, etc.), mémorise les informations importantes, et réponds-lui directement pour confirmer que c'est enregistré."
+            
+            # Envoi du prompt et de l'audio avec son type mime
+            response = model.generate_content([
+                prompt_vocal,
+                {"mime_type": "audio/wav", "data": audio_bytes}
+            ])
+            
+            bot_reply = response.text
+            st.success("Consigne vocale enregistrée et comprise !")
+            st.write(f"**Réponse de la Secrétaire :** {bot_reply}")
+            
+            # Ajout dans l'historique
+            st.session_state.historique_messages.append({
+                "question": "[Consigne Vocale du Gérant]",
+                "reponse": bot_reply,
+                "temps": datetime.now()
+            })
+            
+        except Exception as e:
+            st.error(f"Erreur lors du traitement vocal : {e}")
+            st.info("Astuce : Si le format audio de ton téléphone pose problème, tu peux aussi dicter directement via le clavier vocal de ton smartphone dans la zone de texte juste en haut !")
+        
